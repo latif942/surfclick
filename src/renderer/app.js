@@ -87,22 +87,22 @@ function renderPresets(presets) {
         <div class="name">${escapeHtml(preset.name)}</div>
         <div class="details">${fmt(preset.cps)} cps · ${fmt(preset.dutyCycle)}% duty</div>
       </div>
-      <div class="preset-item-actions">
-        <button class="preset-action-btn equip" title="Load preset">
-          <i class="ti ti-check"></i>
+      <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;margin-left:10px;">
+        <button class="preset-equip-btn" title="Load preset" style="width:30px;height:30px;min-width:30px;border-radius:7px;border:1px solid rgba(168,85,247,0.4);background:rgba(168,85,247,0.12);color:#c084fc;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">
+          <i class="ti ti-check" style="font-size:15px;line-height:1;display:block;"></i>
         </button>
-        <button class="preset-action-btn delete" title="Delete preset">
-          <i class="ti ti-x"></i>
+        <button class="preset-delete-btn" title="Delete preset" style="width:30px;height:30px;min-width:30px;border-radius:7px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.5);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">
+          <i class="ti ti-x" style="font-size:15px;line-height:1;display:block;"></i>
         </button>
       </div>
     `;
-    item.querySelector('.equip').addEventListener('click', () => {
+    item.querySelector('.preset-equip-btn').addEventListener('click', () => {
       state.cps = preset.cps;
       state.dutyCycle = preset.dutyCycle;
       updateStatUI();
       persistSettings();
     });
-    item.querySelector('.delete').addEventListener('click', async () => {
+    item.querySelector('.preset-delete-btn').addEventListener('click', async () => {
       const updated = await window.surfaceClicker.deletePreset(preset.id);
       renderPresets(updated);
     });
