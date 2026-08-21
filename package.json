@@ -1,0 +1,49 @@
+{
+  "name": "surface-clicker",
+  "version": "1.0.0",
+  "description": "Surface Clicker - a configurable autoclicker with CPS and duty cycle control",
+  "main": "src/main/main.js",
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "@nut-tree-fork/nut-js": "^4.2.0",
+    "electron-store": "^8.2.0"
+  },
+  "build": {
+    "appId": "com.surfaceclicker.app",
+    "productName": "Surface Clicker",
+    "directories": {
+      "buildResources": "assets",
+      "output": "build"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "assets/SurfaceClicker.ico",
+      "target": "nsis"
+    },
+    "mac": {
+      "icon": "assets/SurfaceClicker.icns",
+      "target": "dmg"
+    },
+    "linux": {
+      "icon": "assets/SurfaceClicker.png",
+      "target": "AppImage"
+    }
+  }
+}

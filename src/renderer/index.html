@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Surface Clicker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Michroma&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css" />
+  <link rel="stylesheet" href="styles/globals.css" />
+</head>
+<body>
+  <div class="app">
+    <div class="glow glow-top"></div>
+    <div class="glow glow-bottom"></div>
+    <div class="edge-line"></div>
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div class="brand-text">
+          <div>SURFACE</div>
+          <div class="accent">CLICKER</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <div class="nav-item active" data-page="main">
+          <i class="ti ti-cursor-text"></i>
+          <span>main</span>
+        </div>
+        <div class="nav-item" data-page="settings">
+          <i class="ti ti-settings-2"></i>
+          <span>settings</span>
+        </div>
+        <div class="nav-item" data-page="stats">
+          <i class="ti ti-chart-line"></i>
+          <span>stats</span>
+        </div>
+      </nav>
+
+      <div class="status">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">idle</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="main-header">
+        <span class="page-title">Main</span>
+        <button class="btn btn-primary" id="start-btn">
+          <i class="ti ti-player-play-filled"></i>
+          <span id="start-btn-label">Start</span>
+        </button>
+      </header>
+
+      <div class="stat-grid">
+        <div class="stat-card cps-card">
+          <div class="stat-label">clicks per second</div>
+          <div class="stat-value"><span id="cps-value">12.5</span></div>
+          <input type="range" id="cps-slider" min="1" max="30" step="0.5" value="12.5" />
+        </div>
+        <div class="stat-card cdc-card">
+          <div class="stat-label">click duty cycle</div>
+          <div class="stat-value"><span id="cdc-value">65</span><span class="unit">%</span></div>
+          <input type="range" id="cdc-slider" min="1" max="100" step="1" value="65" />
+        </div>
+      </div>
+
+      <div class="section-label">click mode</div>
+      <div class="mode-toggle">
+        <div class="mode-option active" data-mode="toggle">Toggle</div>
+        <div class="mode-option" data-mode="hold">Hold</div>
+      </div>
+
+      <div class="section-label">activation key</div>
+      <div class="key-row">
+        <div class="key-field" id="key-field">press any key or side button</div>
+        <button class="btn btn-primary" id="set-key-btn">Set key</button>
+      </div>
+
+      <div class="section-label">presets</div>
+      <div class="preset-list" id="preset-list">
+        <div class="preset-empty" id="preset-empty">
+          <i class="ti ti-bookmark-off"></i>
+          <div class="preset-empty-title">no presets saved yet</div>
+          <div class="preset-empty-sub">save your current cps and duty cycle below</div>
+        </div>
+      </div>
+
+      <div class="preset-save-row">
+        <input type="text" id="preset-name" placeholder="name this preset" />
+        <button class="btn btn-primary" id="save-preset-btn">
+          <i class="ti ti-device-floppy"></i>
+          Save
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

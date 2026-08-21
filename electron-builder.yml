@@ -1,0 +1,18 @@
+appId: com.surfaceclicker.app
+productName: Surface Clicker
+directories:
+  buildResources: assets
+  output: build
+files:
+  - src/**/*
+  - assets/**/*
+  - package.json
+win:
+  icon: assets/SurfaceClicker.ico
+  target: nsis
+mac:
+  icon: assets/SurfaceClicker.icns
+  target: dmg
+linux:
+  icon: assets/SurfaceClicker.png
+  target: AppImage
