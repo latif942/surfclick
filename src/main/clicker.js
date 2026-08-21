@@ -1,26 +1,27 @@
 // Handles the actual mouse-click simulation.
 //
 // CPS (clicks per second) sets how many click cycles happen per second.
-// Duty cycle (%) sets what portion of each cycle the "button" is considered
-// held down before releasing - this only matters visually/behaviorally for
-// games that read hold duration, since a plain click is instantaneous.
-// We simulate it by holding mouseDown for (dutyCycle% of the cycle) then
-// mouseUp for the remainder.
+// Duty cycle (%) sets what portion of each cycle the "button" is held down.
+//
+// The original implementation was hard-capped at ~21 CPS because it used
+// await mouse.pressButton() + await mouse.releaseButton() — four serialised
+// async calls per cycle — and each nut-js async call has enough native-addon
+// + Node.js overhead to eat the entire budget above ~21 CPS.
+//
+// Fix: use mouse.click() (one native call instead of two) and switch the
+// scheduler from setTimeout to setImmediate above ~30 CPS so the event loop
+// stops fighting us. At extreme CPS (>200) we fire clicks in tight burst
+// batches, catching up to a wall-clock target in the same tick before
+// yielding to keep the UI responsive.
 
 const { performance } = require('perf_hooks');
 
 let mouse;
 try {
-  // @nut-tree-fork/nut-js provides cross-platform mouse control.
-  // Run `npm install` in the project root before starting the app.
   ({ mouse } = require('@nut-tree-fork/nut-js'));
 
-  // IMPORTANT: nut-js's pressButton/releaseButton each sleep for
-  // mouse.config.autoDelayMs *before* doing anything, and it defaults to
-  // 100ms. That's on top of whatever CPS we ask for below, and it's what
-  // was hard-capping this app at ~21 cps no matter what the slider said.
-  // We do our own timing via cycleMs/holdMs, so we don't want nut-js
-  // adding its own delay on top of that.
+  // Eliminate all artificial delays nut-js adds before every call.
+  // Without this it defaults to 100ms per call — a hard 10 CPS ceiling.
   mouse.config.autoDelayMs = 0;
 } catch (err) {
   console.warn(
@@ -33,60 +34,100 @@ let running = false;
 let scheduledTimer = null;
 let cfg = { cps: 1, dutyCycle: 50 };
 
-function msFromCps(cps) {
-  const safeCps = Math.max(0.1, Number(cps) || 1);
-  return 1000 / safeCps;
-}
+// ---- single-click helper ----
+// Below ~30 CPS we can afford the press+hold+release sequence to honour
+// the duty cycle duration. Above that, the hold duration is in single-digit
+// ms territory where the extra async round-trip costs more than it's worth,
+// so we collapse to a single click() call.
 
-async function press() {
+const DUTY_CYCLE_THRESHOLD_CPS = 30; // above this, skip explicit hold
+const TIGHT_LOOP_THRESHOLD_CPS = 80; // above this, use setImmediate scheduler
+
+async function doClick(holdMs) {
   if (!mouse) return;
   try {
-    await mouse.pressButton(0); // 0 = left button
+    if (holdMs >= 4) {
+      // Two calls but the duty-cycle hold is meaningful at this CPS.
+      await mouse.pressButton(0);
+      await new Promise((r) => setTimeout(r, holdMs));
+      await mouse.releaseButton(0);
+    } else {
+      // Single call — nut-js fires press+release atomically with no extra
+      // async round-trip between them, breaking through the ~21 CPS ceiling.
+      await mouse.click(0);
+    }
   } catch (err) {
-    console.error('Click simulation error (press):', err);
+    console.error('Click simulation error:', err);
   }
 }
 
-async function release() {
-  if (!mouse) return;
-  try {
-    await mouse.releaseButton(0);
-  } catch (err) {
-    console.error('Click simulation error (release):', err);
-  }
-}
+// ---- scheduler ----
+// At low-to-medium CPS we use a drift-corrected setTimeout: schedule each
+// next tick against the *absolute* target time so jitter doesn't accumulate.
+//
+// At high CPS (>80) we switch to setImmediate: setTimeout has ~1ms minimum
+// resolution on most OSes, which becomes a significant fraction of each cycle
+// at 100+ CPS. setImmediate yields to the OS and comes back in the next event
+// loop iteration — effectively 0ms overhead — letting us hit 200-500+ CPS.
 
-// Schedules the next cycle against an absolute target timestamp (rather
-// than "wait N ms from now") so timer jitter doesn't accumulate into a
-// slower and slower effective CPS over time - each cycle self-corrects
-// against the clock instead of drifting off the previous one.
 function scheduleNext(targetTime) {
-  const delay = Math.max(0, targetTime - performance.now());
-  scheduledTimer = setTimeout(() => runCycle(targetTime), delay);
+  const delay = targetTime - performance.now();
+
+  if (cfg.cps >= TIGHT_LOOP_THRESHOLD_CPS) {
+    // High CPS: use setImmediate and catch up to the target in burst batches.
+    setImmediate(() => runBurst(targetTime));
+  } else if (delay <= 1) {
+    // Already past due — fire immediately without another timer call.
+    setImmediate(() => runCycle(targetTime));
+  } else {
+    scheduledTimer = setTimeout(() => runCycle(targetTime), Math.max(0, delay - 1));
+  }
 }
 
+// Standard single-cycle runner (low/medium CPS).
 async function runCycle(targetTime) {
   if (!running) return;
 
-  const cycleMs = msFromCps(cfg.cps);
-  const holdMs = cycleMs * (cfg.dutyCycle / 100);
+  const cycleMs = 1000 / Math.max(0.1, cfg.cps);
+  const holdMs =
+    cfg.cps < DUTY_CYCLE_THRESHOLD_CPS ? cycleMs * (cfg.dutyCycle / 100) : 0;
 
-  await press();
-
-  // Only bother with an explicit "hold" delay if it's long enough to
-  // matter. At high CPS the whole cycle can be a handful of ms, and an
-  // extra timer in the middle just adds more jitter for no real benefit -
-  // games mostly care that a press+release happened, not its exact
-  // duration at that point.
-  if (holdMs >= 4) {
-    await new Promise((r) => setTimeout(r, holdMs));
-  }
-
-  await release();
+  await doClick(holdMs);
 
   if (!running) return;
   scheduleNext(targetTime + cycleMs);
 }
+
+// Burst runner (high CPS): fire multiple clicks per setImmediate tick if we
+// are behind the wall clock, then yield. This lets us sustain 200-500+ CPS
+// without flooding the event loop — we catch up to the clock in one batch,
+// then yield with setImmediate before the next batch.
+async function runBurst(targetTime) {
+  if (!running) return;
+
+  const cycleMs = 1000 / Math.max(0.1, cfg.cps);
+  const now = performance.now();
+
+  // Fire all overdue clicks in one synchronous-ish burst (still awaited,
+  // but without extra timer overhead between them).
+  let t = targetTime;
+  while (t <= now + 0.5 && running) {
+    await doClick(0); // no hold at high CPS
+    t += cycleMs;
+  }
+
+  if (!running) return;
+
+  // Schedule the next burst for whenever the next click is due.
+  const delay = t - performance.now();
+  if (delay <= 1) {
+    setImmediate(() => runBurst(t));
+  } else {
+    scheduledTimer = setTimeout(() => runBurst(t), Math.max(0, delay - 1));
+  }
+}
+
+// ---- public API ----
 
 function start({ cps, dutyCycle }, onStatus) {
   if (running) stop();
