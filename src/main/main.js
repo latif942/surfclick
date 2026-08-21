@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 
 const store = require('./store');
@@ -8,6 +8,9 @@ const hotkeys = require('./hotkeys');
 let mainWindow;
 
 function createWindow() {
+  // Remove the native menu bar entirely
+  Menu.setApplicationMenu(null);
+
   mainWindow = new BrowserWindow({
     width: 940,
     height: 680,
@@ -28,9 +31,6 @@ function createWindow() {
   // mainWindow.webContents.openDevTools();
 }
 
-// Wires up the currently-saved activation binding (keyboard key or mouse
-// button, including side buttons) to start/stop the clicker. Sends
-// separate down/up IPC events so the renderer can do real toggle vs hold.
 function registerCurrentBinding() {
   const { activationKey } = store.getSettings();
   hotkeys.registerActivation(activationKey, {
@@ -79,24 +79,25 @@ ipcMain.handle('clicker:start', (_event, { cps, dutyCycle }) => {
   clicker.start({ cps, dutyCycle }, (status) => {
     mainWindow?.webContents.send('clicker:status', status);
   });
+  // Push an explicit running:true status immediately so the UI doesn't wait
+  mainWindow?.webContents.send('clicker:status', { running: true });
   return true;
 });
 
 ipcMain.handle('clicker:stop', () => {
-  clicker.stop();
+  clicker.stop((status) => {
+    mainWindow?.webContents.send('clicker:status', status);
+  });
+  // Push an explicit running:false immediately
+  mainWindow?.webContents.send('clicker:status', { running: false });
   return true;
 });
 
 // ---- IPC: activation key capture ----
-//
-// The renderer can't see side mouse buttons or global key presses on its
-// own, so capturing a new binding also happens through the raw input hook
-// in the main process. The renderer calls startCapture, then waits for the
-// 'hotkey:captured' push event with whatever key/button came in next.
 
 ipcMain.handle('hotkey:startCapture', () => {
   hotkeys.startCapture((binding) => {
-    if (!binding) return; // capture unavailable (uiohook failed to load)
+    if (!binding) return;
     store.setSettings({ activationKey: binding });
     registerCurrentBinding();
     mainWindow?.webContents.send('hotkey:captured', {

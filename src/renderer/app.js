@@ -18,6 +18,9 @@ const presetEmpty = document.getElementById('preset-empty');
 const presetNameInput = document.getElementById('preset-name');
 const savePresetBtn = document.getElementById('save-preset-btn');
 
+const navItems = document.querySelectorAll('.nav-item');
+const pages = document.querySelectorAll('.page');
+
 let state = {
   cps: 12.5,
   dutyCycle: 65,
@@ -27,6 +30,9 @@ let state = {
 };
 
 let listeningForKey = false;
+
+// Track hold mode key state to prevent repeated triggers
+let holdKeyDown = false;
 
 function fmt(n) {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
@@ -79,8 +85,8 @@ function renderPresets(presets) {
         <div class="details">${fmt(preset.cps)} cps · ${fmt(preset.dutyCycle)}% duty</div>
       </div>
       <div class="preset-item-actions">
-        <i class="ti ti-player-play-filled preset-load" title="Load preset"></i>
-        <i class="ti ti-trash preset-delete" title="Delete preset"></i>
+        <i class="ti ti-check preset-load" title="Equip preset"></i>
+        <i class="ti ti-x preset-delete" title="Remove preset"></i>
       </div>
     `;
     item.querySelector('.preset-load').addEventListener('click', () => {
@@ -112,7 +118,21 @@ function persistSettings() {
   });
 }
 
-// ---- events ----
+// ---- nav ----
+
+navItems.forEach((item) => {
+  item.addEventListener('click', () => {
+    navItems.forEach((n) => n.classList.remove('active'));
+    item.classList.add('active');
+
+    const page = item.dataset.page;
+    pages.forEach((p) => {
+      p.style.display = p.dataset.page === page ? '' : 'none';
+    });
+  });
+});
+
+// ---- slider events ----
 
 cpsSlider.addEventListener('input', () => {
   state.cps = parseFloat(cpsSlider.value);
@@ -126,11 +146,7 @@ cdcSlider.addEventListener('input', () => {
 });
 cdcSlider.addEventListener('change', persistSettings);
 
-// ---- click-to-type on the CPS / duty cycle numbers ----
-// Clicking the big number swaps it for a number input so you can type any
-// value directly instead of dragging the slider. CPS isn't clamped to the
-// slider's max (100) since "type anything" is the point; duty cycle stays
-// clamped to 1-100 since it's a percentage and anything else is meaningless.
+// ---- click-to-type on CPS / duty cycle numbers ----
 
 function makeValueEditable(valueEl, slider, { min, max, clampToSlider }, onCommit) {
   valueEl.addEventListener('click', () => {
@@ -192,13 +208,13 @@ makeValueEditable(
 );
 
 function slidersToState() {
-  // Sliders visually clamp to their own min/max even if state holds a
-  // typed-in value beyond that (e.g. cps > 100) - that's expected.
   cpsSlider.value = state.cps;
   cdcSlider.value = state.dutyCycle;
   cpsValue.textContent = fmt(state.cps);
   cdcValue.textContent = fmt(state.dutyCycle);
 }
+
+// ---- mode toggle ----
 
 modeOptions.forEach((el) => {
   el.addEventListener('click', () => {
@@ -208,9 +224,8 @@ modeOptions.forEach((el) => {
   });
 });
 
-// Capturing a new activation input happens in the main process via the
-// raw input hook, since side mouse buttons never reach the renderer as DOM
-// events. We just ask main to listen for the next key/click and wait.
+// ---- activation key capture ----
+
 setKeyBtn.addEventListener('click', async () => {
   listeningForKey = true;
   keyField.textContent = 'press any key or mouse button...';
@@ -226,8 +241,6 @@ window.addEventListener('keydown', async (e) => {
     listeningForKey = false;
     updateKeyUI();
   }
-  // Any other key press is picked up system-wide by the main process hook
-  // and arrives via onHotkeyCaptured below, not through this listener.
 });
 
 window.surfaceClicker.onHotkeyCaptured((binding) => {
@@ -236,35 +249,66 @@ window.surfaceClicker.onHotkeyCaptured((binding) => {
   updateKeyUI();
 });
 
+// ---- start/stop button ----
+
+async function startClicking() {
+  if (state.running) return;
+  await window.surfaceClicker.startClicking({ cps: state.cps, dutyCycle: state.dutyCycle });
+}
+
+async function stopClicking() {
+  if (!state.running) return;
+  await window.surfaceClicker.stopClicking();
+}
+
 startBtn.addEventListener('click', async () => {
   if (state.running) {
-    await window.surfaceClicker.stopClicking();
+    await stopClicking();
   } else {
-    await window.surfaceClicker.startClicking({ cps: state.cps, dutyCycle: state.dutyCycle });
+    await startClicking();
   }
 });
+
+// ---- clicker status from main process ----
 
 window.surfaceClicker.onStatus((status) => {
   state.running = status.running;
   updateRunningUI();
 });
 
-// The main process reports the activation input's down and up separately
-// (via the uiohook raw input hook), so hold mode is a real press-and-hold
-// now instead of behaving like toggle.
+// ---- hotkey down/up — hold mode freeze fix ----
+// The freeze happened because hold mode could fire startClicking while
+// already running (double-trigger), leaving the state out of sync so the
+// button appeared stuck. We now guard with holdKeyDown and separate
+// start/stop helpers that check state.running before acting.
+
 window.surfaceClicker.onHotkeyDown(() => {
   if (state.mode === 'toggle') {
-    startBtn.click();
-  } else if (state.mode === 'hold' && !state.running) {
-    startBtn.click();
+    // Toggle: each press flips state
+    if (state.running) {
+      stopClicking();
+    } else {
+      startClicking();
+    }
+  } else if (state.mode === 'hold') {
+    // Hold: only start if not already running, track key state
+    if (!holdKeyDown && !state.running) {
+      holdKeyDown = true;
+      startClicking();
+    }
   }
 });
 
 window.surfaceClicker.onHotkeyUp(() => {
-  if (state.mode === 'hold' && state.running) {
-    startBtn.click();
+  if (state.mode === 'hold') {
+    holdKeyDown = false;
+    if (state.running) {
+      stopClicking();
+    }
   }
 });
+
+// ---- presets ----
 
 savePresetBtn.addEventListener('click', async () => {
   const name = presetNameInput.value.trim();
@@ -298,6 +342,11 @@ async function init() {
 
   const presets = await window.surfaceClicker.listPresets();
   renderPresets(presets);
+
+  // Show only main page on load
+  pages.forEach((p) => {
+    p.style.display = p.dataset.page === 'main' ? '' : 'none';
+  });
 }
 
 init();

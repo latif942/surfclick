@@ -92,8 +92,6 @@ function ensureListening() {
   listening = true;
 }
 
-// Registers the binding that should trigger start/stop, with separate
-// down/up callbacks so the caller can implement toggle or true hold mode.
 function registerActivation(binding, handlers) {
   ensureListening();
   activeBinding = binding || null;
@@ -106,9 +104,6 @@ function unregisterAll() {
   activeHandlers = null;
 }
 
-// Listens for the next key press or mouse click (including side buttons)
-// and reports it back via callback, instead of registering it. Used while
-// the user is choosing a new activation input in the UI.
 function startCapture(onCaptured) {
   ensureListening();
   if (!isAvailable) {

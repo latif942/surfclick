@@ -1,15 +1,4 @@
 // Thin wrapper around uiohook-napi - a global keyboard/mouse hook.
-//
-// This is what makes two things possible that Electron's globalShortcut
-// can't do on its own:
-//   1. Side mouse buttons (mouse4/mouse5) as an activation input.
-//   2. True hold-mode: knowing when a key/button is *released*, not just
-//      pressed, so a global hotkey can behave like an actual held button.
-//
-// Note: on macOS this requires the app to be granted Accessibility +
-// Input Monitoring permissions (System Settings -> Privacy & Security).
-// On Linux it needs an X11 session (Wayland support in libuiohook is
-// limited). Windows works out of the box.
 
 let uIOhook;
 let UiohookKey;
@@ -44,24 +33,22 @@ function shutdown() {
   started = false;
 }
 
-// Build a reverse lookup of keycode -> readable key name (e.g. 96 -> "F6")
-// from whatever keys uiohook-napi's UiohookKey enum exposes.
 const KEY_NAME_BY_CODE = {};
 if (UiohookKey) {
   for (const [name, code] of Object.entries(UiohookKey)) {
-    // Prefer shorter / more common aliases if there happen to be dupes.
     if (!(code in KEY_NAME_BY_CODE)) {
       KEY_NAME_BY_CODE[code] = name;
     }
   }
 }
 
+// Mouse 4 = XButton1 (back), Mouse 5 = XButton2 (forward)
 const MOUSE_BUTTON_LABELS = {
   1: 'Mouse Left',
   2: 'Mouse Right',
   3: 'Mouse Middle',
-  4: 'Mouse 4', // "back" side button
-  5: 'Mouse 5', // "forward" side button
+  4: 'XButton1',
+  5: 'XButton2',
 };
 
 module.exports = {

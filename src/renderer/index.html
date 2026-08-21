@@ -9,10 +9,6 @@
 </head>
 <body>
   <div class="app">
-    <div class="glow glow-top"></div>
-    <div class="glow glow-bottom"></div>
-    <div class="edge-line"></div>
-
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark"></div>
@@ -44,55 +40,82 @@
     </aside>
 
     <main class="main">
-      <header class="main-header">
-        <span class="page-title">Main</span>
-        <button class="btn btn-primary" id="start-btn">
-          <i class="ti ti-player-play-filled"></i>
-          <span id="start-btn-label">Start</span>
-        </button>
-      </header>
 
-      <div class="stat-grid">
-        <div class="stat-card cps-card">
-          <div class="stat-label">clicks per second</div>
-          <div class="stat-value"><span id="cps-value">12.5</span></div>
-          <input type="range" id="cps-slider" min="1" max="100" step="0.5" value="12.5" />
+      <!-- MAIN PAGE -->
+      <div class="page" data-page="main">
+        <header class="main-header">
+          <span class="page-title">Main</span>
+          <button class="btn btn-primary" id="start-btn">
+            <i class="ti ti-player-play-filled"></i>
+            <span id="start-btn-label">Start</span>
+          </button>
+        </header>
+
+        <div class="stat-grid">
+          <div class="stat-card cps-card">
+            <div class="stat-label">clicks per second</div>
+            <div class="stat-value"><span id="cps-value">12.5</span></div>
+            <input type="range" id="cps-slider" min="1" max="100" step="0.5" value="12.5" />
+          </div>
+          <div class="stat-card cdc-card">
+            <div class="stat-label">click duty cycle</div>
+            <div class="stat-value"><span id="cdc-value">65</span><span class="unit">%</span></div>
+            <input type="range" id="cdc-slider" min="1" max="100" step="1" value="65" />
+          </div>
         </div>
-        <div class="stat-card cdc-card">
-          <div class="stat-label">click duty cycle</div>
-          <div class="stat-value"><span id="cdc-value">65</span><span class="unit">%</span></div>
-          <input type="range" id="cdc-slider" min="1" max="100" step="1" value="65" />
+
+        <div class="section-label">click mode</div>
+        <div class="mode-toggle">
+          <div class="mode-option active" data-mode="toggle">Toggle</div>
+          <div class="mode-option" data-mode="hold">Hold</div>
+        </div>
+
+        <div class="section-label">activation key</div>
+        <div class="key-row">
+          <div class="key-field" id="key-field">press any key or mouse button</div>
+          <button class="btn btn-primary" id="set-key-btn">Set key</button>
+        </div>
+
+        <div class="section-label">presets</div>
+        <div class="preset-list" id="preset-list">
+          <div class="preset-empty" id="preset-empty">
+            <i class="ti ti-bookmark-off"></i>
+            <div class="preset-empty-title">no presets saved yet</div>
+            <div class="preset-empty-sub">save your current cps and duty cycle below</div>
+          </div>
+        </div>
+
+        <div class="preset-save-row">
+          <input type="text" id="preset-name" placeholder="name this preset" />
+          <button class="btn btn-primary" id="save-preset-btn">
+            <i class="ti ti-device-floppy"></i>
+            Save
+          </button>
         </div>
       </div>
 
-      <div class="section-label">click mode</div>
-      <div class="mode-toggle">
-        <div class="mode-option active" data-mode="toggle">Toggle</div>
-        <div class="mode-option" data-mode="hold">Hold</div>
-      </div>
-
-      <div class="section-label">activation key</div>
-      <div class="key-row">
-        <div class="key-field" id="key-field">press any key or mouse button</div>
-        <button class="btn btn-primary" id="set-key-btn">Set key</button>
-      </div>
-
-      <div class="section-label">presets</div>
-      <div class="preset-list" id="preset-list">
-        <div class="preset-empty" id="preset-empty">
-          <i class="ti ti-bookmark-off"></i>
-          <div class="preset-empty-title">no presets saved yet</div>
-          <div class="preset-empty-sub">save your current cps and duty cycle below</div>
+      <!-- SETTINGS PAGE -->
+      <div class="page" data-page="settings">
+        <header class="main-header">
+          <span class="page-title">Settings</span>
+        </header>
+        <div class="settings-placeholder">
+          <i class="ti ti-settings-2"></i>
+          <p>Settings coming soon</p>
         </div>
       </div>
 
-      <div class="preset-save-row">
-        <input type="text" id="preset-name" placeholder="name this preset" />
-        <button class="btn btn-primary" id="save-preset-btn">
-          <i class="ti ti-device-floppy"></i>
-          Save
-        </button>
+      <!-- STATS PAGE -->
+      <div class="page" data-page="stats">
+        <header class="main-header">
+          <span class="page-title">Stats</span>
+        </header>
+        <div class="settings-placeholder">
+          <i class="ti ti-chart-line"></i>
+          <p>Stats coming soon</p>
+        </div>
       </div>
+
     </main>
   </div>
 
