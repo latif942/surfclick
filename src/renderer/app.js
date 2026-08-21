@@ -88,11 +88,9 @@ function renderPresets(presets) {
         <div class="details">${fmt(preset.cps)} cps · ${fmt(preset.dutyCycle)}% duty</div>
       </div>
       <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;margin-left:10px;">
-        <button class="preset-equip-btn" title="Load preset" style="width:30px;height:30px;min-width:30px;border-radius:7px;border:1px solid rgba(168,85,247,0.4);background:rgba(168,85,247,0.12);color:#c084fc;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">
-          <i class="ti ti-check" style="font-size:15px;line-height:1;display:block;"></i>
-        </button>
-        <button class="preset-delete-btn" title="Delete preset" style="width:30px;height:30px;min-width:30px;border-radius:7px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.5);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">
-          <i class="ti ti-x" style="font-size:15px;line-height:1;display:block;"></i>
+        <button class="preset-equip-btn" title="Load preset" style="width:52px;height:28px;min-width:52px;border-radius:7px;border:1px solid rgba(168,85,247,0.4);background:rgba(168,85,247,0.12);color:#c084fc;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-size:11px;font-weight:600;font-family:sans-serif;">Equip</button>
+        <button class="preset-delete-btn" title="Delete preset" style="width:30px;height:30px;min-width:30px;border-radius:7px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.55);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-size:14px;font-family:sans-serif;">
+          ✕
         </button>
       </div>
     `;
