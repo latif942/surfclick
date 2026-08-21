@@ -22,7 +22,7 @@ let state = {
   cps: 12.5,
   dutyCycle: 65,
   mode: 'toggle',
-  activationKey: 'F6',
+  activationKey: { type: 'keyboard', keyName: 'F6', label: 'F6' },
   running: false,
 };
 
@@ -47,8 +47,9 @@ function updateModeUI() {
 
 function updateKeyUI() {
   if (!listeningForKey) {
-    keyField.textContent = state.activationKey || 'press any key or side button';
-    keyField.classList.toggle('set', !!state.activationKey);
+    const label = state.activationKey?.label;
+    keyField.textContent = label || 'press any key or mouse button';
+    keyField.classList.toggle('set', !!label);
     keyField.classList.remove('listening');
   }
 }
@@ -125,6 +126,80 @@ cdcSlider.addEventListener('input', () => {
 });
 cdcSlider.addEventListener('change', persistSettings);
 
+// ---- click-to-type on the CPS / duty cycle numbers ----
+// Clicking the big number swaps it for a number input so you can type any
+// value directly instead of dragging the slider. CPS isn't clamped to the
+// slider's max (100) since "type anything" is the point; duty cycle stays
+// clamped to 1-100 since it's a percentage and anything else is meaningless.
+
+function makeValueEditable(valueEl, slider, { min, max, clampToSlider }, onCommit) {
+  valueEl.addEventListener('click', () => {
+    const startingValue = parseFloat(slider.value);
+
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = 'stat-value-input';
+    input.value = startingValue;
+    input.min = clampToSlider ? slider.min : min;
+    input.max = clampToSlider ? slider.max : max;
+    input.step = slider.step || 'any';
+
+    valueEl.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let settled = false;
+    function commit(revert) {
+      if (settled) return;
+      settled = true;
+
+      let n = revert ? startingValue : parseFloat(input.value);
+      if (Number.isNaN(n)) n = startingValue;
+      n = Math.min(max, Math.max(min, n));
+
+      input.replaceWith(valueEl);
+      onCommit(n);
+    }
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') input.blur();
+      if (e.key === 'Escape') commit(true);
+    });
+    input.addEventListener('blur', () => commit(false));
+  });
+}
+
+makeValueEditable(
+  cpsValue,
+  cpsSlider,
+  { min: 0.1, max: 1000, clampToSlider: false },
+  (n) => {
+    state.cps = n;
+    slidersToState();
+    persistSettings();
+  }
+);
+
+makeValueEditable(
+  cdcValue,
+  cdcSlider,
+  { min: 1, max: 100, clampToSlider: true },
+  (n) => {
+    state.dutyCycle = n;
+    slidersToState();
+    persistSettings();
+  }
+);
+
+function slidersToState() {
+  // Sliders visually clamp to their own min/max even if state holds a
+  // typed-in value beyond that (e.g. cps > 100) - that's expected.
+  cpsSlider.value = state.cps;
+  cdcSlider.value = state.dutyCycle;
+  cpsValue.textContent = fmt(state.cps);
+  cdcValue.textContent = fmt(state.dutyCycle);
+}
+
 modeOptions.forEach((el) => {
   el.addEventListener('click', () => {
     state.mode = el.dataset.mode;
@@ -133,45 +208,33 @@ modeOptions.forEach((el) => {
   });
 });
 
-setKeyBtn.addEventListener('click', () => {
+// Capturing a new activation input happens in the main process via the
+// raw input hook, since side mouse buttons never reach the renderer as DOM
+// events. We just ask main to listen for the next key/click and wait.
+setKeyBtn.addEventListener('click', async () => {
   listeningForKey = true;
-  keyField.textContent = 'press a key...';
+  keyField.textContent = 'press any key or mouse button...';
   keyField.classList.add('listening');
+  await window.surfaceClicker.startHotkeyCapture();
 });
 
 window.addEventListener('keydown', async (e) => {
   if (!listeningForKey) return;
-  e.preventDefault();
-
-  const accelerator = mapKeyToAccelerator(e);
-  if (!accelerator) return;
-
-  const ok = await window.surfaceClicker.setHotkey(accelerator);
-  listeningForKey = false;
-
-  if (ok) {
-    state.activationKey = accelerator;
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    await window.surfaceClicker.cancelHotkeyCapture();
+    listeningForKey = false;
+    updateKeyUI();
   }
-  updateKeyUI();
+  // Any other key press is picked up system-wide by the main process hook
+  // and arrives via onHotkeyCaptured below, not through this listener.
 });
 
-function mapKeyToAccelerator(e) {
-  // Function keys map directly (F1-F24). Letters/numbers map directly too.
-  // Modifier-only presses are ignored.
-  if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return null;
-
-  if (/^F([1-9]|1[0-9]|2[0-4])$/.test(e.key)) return e.key;
-
-  const parts = [];
-  if (e.ctrlKey) parts.push('CommandOrControl');
-  if (e.shiftKey) parts.push('Shift');
-  if (e.altKey) parts.push('Alt');
-
-  let key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
-  parts.push(key);
-
-  return parts.join('+');
-}
+window.surfaceClicker.onHotkeyCaptured((binding) => {
+  state.activationKey = binding;
+  listeningForKey = false;
+  updateKeyUI();
+});
 
 startBtn.addEventListener('click', async () => {
   if (state.running) {
@@ -186,13 +249,21 @@ window.surfaceClicker.onStatus((status) => {
   updateRunningUI();
 });
 
-window.surfaceClicker.onHotkeyTriggered(() => {
+// The main process reports the activation input's down and up separately
+// (via the uiohook raw input hook), so hold mode is a real press-and-hold
+// now instead of behaving like toggle.
+window.surfaceClicker.onHotkeyDown(() => {
   if (state.mode === 'toggle') {
     startBtn.click();
+  } else if (state.mode === 'hold' && !state.running) {
+    startBtn.click();
   }
-  // 'hold' mode would need keyup detection via a raw input hook (iohook) -
-  // globalShortcut only fires on keydown, so true press-and-hold behavior
-  // for a global hotkey needs that additional dependency.
+});
+
+window.surfaceClicker.onHotkeyUp(() => {
+  if (state.mode === 'hold' && state.running) {
+    startBtn.click();
+  }
 });
 
 savePresetBtn.addEventListener('click', async () => {

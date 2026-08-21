@@ -5,7 +5,9 @@ const store = new Store({
     settings: {
       cps: 12.5,
       dutyCycle: 65,
-      activationKey: 'F6',
+      // A binding is either { type: 'keyboard', keyName } or
+      // { type: 'mouse', button } (button 4/5 = side buttons).
+      activationKey: { type: 'keyboard', keyName: 'F6' },
       mode: 'toggle', // 'toggle' | 'hold'
     },
     presets: [], // { id, name, cps, dutyCycle }

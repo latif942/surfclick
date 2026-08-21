@@ -17,9 +17,16 @@ contextBridge.exposeInMainWorld('surfaceClicker', {
     ipcRenderer.on('clicker:status', (_event, status) => callback(status));
   },
 
-  // activation key
-  setHotkey: (accelerator) => ipcRenderer.invoke('hotkey:set', accelerator),
-  onHotkeyTriggered: (callback) => {
-    ipcRenderer.on('hotkey:triggered', () => callback());
+  // activation key (keyboard key or mouse button, incl. side buttons)
+  startHotkeyCapture: () => ipcRenderer.invoke('hotkey:startCapture'),
+  cancelHotkeyCapture: () => ipcRenderer.invoke('hotkey:cancelCapture'),
+  onHotkeyCaptured: (callback) => {
+    ipcRenderer.on('hotkey:captured', (_event, binding) => callback(binding));
+  },
+  onHotkeyDown: (callback) => {
+    ipcRenderer.on('hotkey:down', () => callback());
+  },
+  onHotkeyUp: (callback) => {
+    ipcRenderer.on('hotkey:up', () => callback());
   },
 });

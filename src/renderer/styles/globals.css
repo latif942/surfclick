@@ -229,6 +229,38 @@ html, body {
   color: #a89ec2;
   margin-left: 2px;
 }
+.stat-value > span:first-child {
+  cursor: text;
+  border-bottom: 1px dashed transparent;
+}
+.stat-value > span:first-child:hover {
+  border-bottom-color: rgba(192, 132, 252, 0.6);
+}
+.stat-value-input {
+  width: 4.5ch;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(192, 132, 252, 0.8);
+  color: #fff;
+  text-shadow: 0 0 22px rgba(192, 132, 252, 0.7);
+  padding: 0;
+}
+.stat-value-input:focus {
+  outline: none;
+}
+/* hide native number spinner arrows so it matches the rest of the UI */
+.stat-value-input::-webkit-outer-spin-button,
+.stat-value-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.stat-value-input[type="number"] {
+  -moz-appearance: textfield;
+}
 input[type="range"] {
   width: 100%;
   accent-color: #c084fc;

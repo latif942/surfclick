@@ -28,8 +28,20 @@ function createWindow() {
   // mainWindow.webContents.openDevTools();
 }
 
+// Wires up the currently-saved activation binding (keyboard key or mouse
+// button, including side buttons) to start/stop the clicker. Sends
+// separate down/up IPC events so the renderer can do real toggle vs hold.
+function registerCurrentBinding() {
+  const { activationKey } = store.getSettings();
+  hotkeys.registerActivation(activationKey, {
+    onDown: () => mainWindow?.webContents.send('hotkey:down'),
+    onUp: () => mainWindow?.webContents.send('hotkey:up'),
+  });
+}
+
 app.whenReady().then(() => {
   createWindow();
+  registerCurrentBinding();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -37,12 +49,12 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  hotkeys.unregisterAll();
+  hotkeys.shutdown();
   if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('will-quit', () => {
-  hotkeys.unregisterAll();
+  hotkeys.shutdown();
   clicker.stop();
 });
 
@@ -76,11 +88,26 @@ ipcMain.handle('clicker:stop', () => {
 });
 
 // ---- IPC: activation key capture ----
+//
+// The renderer can't see side mouse buttons or global key presses on its
+// own, so capturing a new binding also happens through the raw input hook
+// in the main process. The renderer calls startCapture, then waits for the
+// 'hotkey:captured' push event with whatever key/button came in next.
 
-ipcMain.handle('hotkey:set', (_event, accelerator) => {
-  const ok = hotkeys.registerActivationKey(accelerator, () => {
-    mainWindow?.webContents.send('hotkey:triggered');
+ipcMain.handle('hotkey:startCapture', () => {
+  hotkeys.startCapture((binding) => {
+    if (!binding) return; // capture unavailable (uiohook failed to load)
+    store.setSettings({ activationKey: binding });
+    registerCurrentBinding();
+    mainWindow?.webContents.send('hotkey:captured', {
+      ...binding,
+      label: hotkeys.bindingLabel(binding),
+    });
   });
-  if (ok) store.setSettings({ activationKey: accelerator });
-  return ok;
+  return true;
+});
+
+ipcMain.handle('hotkey:cancelCapture', () => {
+  hotkeys.cancelCapture();
+  return true;
 });
