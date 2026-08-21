@@ -487,37 +487,49 @@ input[type="range"] {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .preset-action-btn {
   width: 28px;
   height: 28px;
+  min-width: 28px;
   border-radius: 7px;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 15px;
+  line-height: 1;
   transition: background 0.15s, color 0.15s;
   background: transparent;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.preset-action-btn i {
+  font-size: 15px;
+  line-height: 1;
+  display: block;
 }
 
 .preset-action-btn.equip {
-  color: rgba(168, 85, 247, 0.6);
+  color: rgba(168, 85, 247, 0.7);
 }
 
 .preset-action-btn.equip:hover {
-  background: rgba(168, 85, 247, 0.15);
+  background: rgba(168, 85, 247, 0.18);
   color: #c084fc;
 }
 
 .preset-action-btn.delete {
-  color: rgba(255,255,255,0.2);
+  color: rgba(255, 255, 255, 0.25);
 }
 
 .preset-action-btn.delete:hover {
-  background: rgba(239, 68, 68, 0.12);
+  background: rgba(239, 68, 68, 0.14);
   color: #f87171;
 }
 

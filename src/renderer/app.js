@@ -66,7 +66,7 @@ function updateRunningUI() {
   // swap icon
   const icon = startBtn.querySelector('i');
   if (icon) {
-    icon.className = state.running ? 'ti ti-player-stop-filled' : 'ti ti-player-play-filled';
+    icon.className = state.running ? 'ti ti-player-stop' : 'ti ti-player-play';
   }
 }
 
