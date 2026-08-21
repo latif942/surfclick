@@ -30,8 +30,6 @@ let state = {
 };
 
 let listeningForKey = false;
-
-// Track hold mode key state to prevent repeated triggers
 let holdKeyDown = false;
 
 function fmt(n) {
@@ -54,7 +52,7 @@ function updateModeUI() {
 function updateKeyUI() {
   if (!listeningForKey) {
     const label = state.activationKey?.label;
-    keyField.textContent = label || 'press any key or mouse button';
+    keyField.textContent = label || 'No key set';
     keyField.classList.toggle('set', !!label);
     keyField.classList.remove('listening');
   }
@@ -65,6 +63,11 @@ function updateRunningUI() {
   startBtn.classList.toggle('running', state.running);
   statusDot.classList.toggle('running', state.running);
   statusText.textContent = state.running ? 'running' : 'idle';
+  // swap icon
+  const icon = startBtn.querySelector('i');
+  if (icon) {
+    icon.className = state.running ? 'ti ti-player-stop-filled' : 'ti ti-player-play-filled';
+  }
 }
 
 function renderPresets(presets) {
@@ -85,17 +88,21 @@ function renderPresets(presets) {
         <div class="details">${fmt(preset.cps)} cps · ${fmt(preset.dutyCycle)}% duty</div>
       </div>
       <div class="preset-item-actions">
-        <i class="ti ti-check preset-load" title="Equip preset"></i>
-        <i class="ti ti-x preset-delete" title="Remove preset"></i>
+        <button class="preset-action-btn equip" title="Load preset">
+          <i class="ti ti-check"></i>
+        </button>
+        <button class="preset-action-btn delete" title="Delete preset">
+          <i class="ti ti-x"></i>
+        </button>
       </div>
     `;
-    item.querySelector('.preset-load').addEventListener('click', () => {
+    item.querySelector('.equip').addEventListener('click', () => {
       state.cps = preset.cps;
       state.dutyCycle = preset.dutyCycle;
       updateStatUI();
       persistSettings();
     });
-    item.querySelector('.preset-delete').addEventListener('click', async () => {
+    item.querySelector('.delete').addEventListener('click', async () => {
       const updated = await window.surfaceClicker.deletePreset(preset.id);
       renderPresets(updated);
     });
@@ -228,8 +235,9 @@ modeOptions.forEach((el) => {
 
 setKeyBtn.addEventListener('click', async () => {
   listeningForKey = true;
-  keyField.textContent = 'press any key or mouse button...';
+  keyField.textContent = 'Press any key or button…';
   keyField.classList.add('listening');
+  keyField.classList.remove('set');
   await window.surfaceClicker.startHotkeyCapture();
 });
 
@@ -276,22 +284,16 @@ window.surfaceClicker.onStatus((status) => {
   updateRunningUI();
 });
 
-// ---- hotkey down/up — hold mode freeze fix ----
-// The freeze happened because hold mode could fire startClicking while
-// already running (double-trigger), leaving the state out of sync so the
-// button appeared stuck. We now guard with holdKeyDown and separate
-// start/stop helpers that check state.running before acting.
+// ---- hotkey down/up ----
 
 window.surfaceClicker.onHotkeyDown(() => {
   if (state.mode === 'toggle') {
-    // Toggle: each press flips state
     if (state.running) {
       stopClicking();
     } else {
       startClicking();
     }
   } else if (state.mode === 'hold') {
-    // Hold: only start if not already running, track key state
     if (!holdKeyDown && !state.running) {
       holdKeyDown = true;
       startClicking();
@@ -314,7 +316,7 @@ savePresetBtn.addEventListener('click', async () => {
   const name = presetNameInput.value.trim();
   if (!name) {
     presetNameInput.focus();
-    presetNameInput.style.borderColor = 'rgba(248,113,113,0.7)';
+    presetNameInput.style.borderColor = 'rgba(248,113,113,0.6)';
     setTimeout(() => {
       presetNameInput.style.borderColor = '';
     }, 1200);
@@ -343,7 +345,6 @@ async function init() {
   const presets = await window.surfaceClicker.listPresets();
   renderPresets(presets);
 
-  // Show only main page on load
   pages.forEach((p) => {
     p.style.display = p.dataset.page === 'main' ? '' : 'none';
   });
