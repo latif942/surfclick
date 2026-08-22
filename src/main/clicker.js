@@ -16,23 +16,46 @@
 
 const { performance } = require('perf_hooks');
 
-let mouse;
+let mouse, Button;
 try {
-  ({ mouse } = require('@nut-tree-fork/nut-js'));
-
-  // Eliminate all artificial delays nut-js adds before every call.
-  // Without this it defaults to 100ms per call — a hard 10 CPS ceiling.
+  ({ mouse, Button } = require('@nut-tree-fork/nut-js'));
   mouse.config.autoDelayMs = 0;
 } catch (err) {
-  console.warn(
-    'Could not load @nut-tree-fork/nut-js. Run `npm install` first. ' +
-      'Click simulation will be a no-op until then.'
-  );
+  console.warn('Could not load @nut-tree-fork/nut-js...');
+}
+
+const BUTTON_MAP = {
+  left: () => Button.LEFT,
+  right: () => Button.RIGHT,
+  middle: () => Button.MIDDLE,
+  x1: () => Button.BUTTON_4,
+  x2: () => Button.BUTTON_5,
+};
+
+function resolveButton(name) {
+  return (BUTTON_MAP[name] || BUTTON_MAP.left)();
 }
 
 let running = false;
 let scheduledTimer = null;
-let cfg = { cps: 1, dutyCycle: 50 };
+let cfg = { cps: 1, dutyCycle: 50, clickButton: 'left' };
+
+async function doClick(holdMs) {
+  if (!mouse) return;
+  const btn = resolveButton(cfg.clickButton);
+  try {
+    if (holdMs >= 4) {
+      await mouse.pressButton(btn);
+      await new Promise((r) => setTimeout(r, holdMs));
+      await mouse.releaseButton(btn);
+    } else {
+      await mouse.click(btn);
+    }
+  } catch (err) {
+    console.error('Click simulation error:', err);
+  }
+}
+
 
 // ---- single-click helper ----
 // Below ~30 CPS we can afford the press+hold+release sequence to honour
@@ -129,14 +152,11 @@ async function runBurst(targetTime) {
 
 // ---- public API ----
 
-function start({ cps, dutyCycle }, onStatus) {
+function start({ cps, dutyCycle, clickButton }, onStatus) {
   if (running) stop();
-
   running = true;
-  cfg = { cps, dutyCycle };
-
-  onStatus?.({ running: true, cps, dutyCycle });
-
+  cfg = { cps, dutyCycle, clickButton: clickButton || 'left' };
+  onStatus?.({ running: true, cps, dutyCycle, clickButton: cfg.clickButton });
   scheduleNext(performance.now());
 }
 

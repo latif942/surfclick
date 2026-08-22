@@ -9,14 +9,20 @@
 </head>
 <body>
   <div class="app">
+    <div class="ambient-glow" aria-hidden="true">
+      <div class="glow-orb glow-orb-1"></div>
+      <div class="glow-orb glow-orb-2"></div>
+      <div class="glow-orb glow-orb-3"></div>
+    </div>
+    <div class="drag-region"></div>
     <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark"></div>
-        <div class="brand-text">
-          <div>SURFACE</div>
-          <div class="accent">CLICKER</div>
-        </div>
+    <div class="brand">
+      <img src="../../assets/clickerimg.png" alt="Surface Clicker" class="brand-mark" />
+      <div class="brand-text">
+        <div>SURFACE</div>
+        <div class="accent">CLICKER</div>
       </div>
+    </div>
 
       <div class="nav-group-label">Menu</div>
       <nav class="nav">
@@ -42,15 +48,20 @@
 
     <main class="main">
 
+      <div class="global-window-controls">
+        <button class="btn win-btn ok-btn" id="minimize-btn">OK</button>
+        <button class="btn win-btn exit-btn" id="close-btn">EXIT</button>
+      </div>
+
       <!-- MAIN PAGE -->
       <div class="page" data-page="main">
-        <header class="main-header">
-          <span class="page-title">Clicker</span>
-          <button class="btn btn-primary" id="start-btn">
-            <i class="ti ti-player-play"></i>
-            <span id="start-btn-label">Start</span>
-          </button>
-        </header>
+      <header class="main-header">
+        <span class="page-title">Clicker</span>
+        <button class="btn btn-primary" id="start-btn">
+          <i class="ti ti-player-play"></i>
+          <span id="start-btn-label">Start</span>
+        </button>
+      </header>
 
         <div class="stat-grid">
           <div class="stat-card cps-card">
@@ -69,6 +80,15 @@
         <div class="mode-toggle">
           <div class="mode-option active" data-mode="toggle">Toggle</div>
           <div class="mode-option" data-mode="hold">Hold</div>
+        </div>
+
+        <div class="section-label">Click Button</div>
+        <div class="mode-toggle" id="button-toggle">
+          <div class="mode-option active" data-button="left">Left</div>
+          <div class="mode-option" data-button="right">Right</div>
+          <div class="mode-option" data-button="middle">Middle</div>
+          <div class="mode-option" data-button="x1">X1</div>
+          <div class="mode-option" data-button="x2">X2</div>
         </div>
 
         <div class="section-label">Activation Key</div>
@@ -95,14 +115,40 @@
         </div>
       </div>
 
-      <!-- SETTINGS PAGE -->
       <div class="page" data-page="settings">
         <header class="main-header">
           <span class="page-title">Settings</span>
         </header>
-        <div class="settings-placeholder">
-          <i class="ti ti-settings-2"></i>
-          <p>Settings coming soon</p>
+
+        <div class="section-label">Theme</div>
+        <div class="theme-grid" id="theme-grid">
+          <div class="theme-swatch" data-theme="violet" style="--swatch1:#a855f7;"></div>
+          <div class="theme-swatch" data-theme="cyber" style="--swatch1:#22d3ee;"></div>
+          <div class="theme-swatch" data-theme="sunset" style="--swatch1:#fb923c;"></div>
+          <div class="theme-swatch" data-theme="toxic" style="--swatch1:#a3e635;"></div>
+          <div class="theme-swatch" data-theme="ocean" style="--swatch1:#2dd4bf;"></div>
+          <div class="theme-swatch" data-theme="vaporwave" style="--swatch1:#ec4899;"></div>
+        </div>
+
+        <div class="section-label">Startup</div>
+        <div class="setting-row">
+          <div class="setting-row-label">
+            <div class="setting-row-title">Launch on system startup</div>
+            <div class="setting-row-sub">Open Surface Clicker automatically when you log in</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="startup-toggle" />
+            <span class="switch-track"></span>
+          </label>
+        </div>
+
+        <div class="section-label">Danger Zone</div>
+        <div class="setting-row danger-row">
+          <div class="setting-row-label">
+            <div class="setting-row-title">Uninstall Surface Clicker</div>
+            <div class="setting-row-sub">Removes the app from your computer. This cannot be undone.</div>
+          </div>
+          <button class="btn btn-danger" id="uninstall-btn">Uninstall</button>
         </div>
       </div>
 

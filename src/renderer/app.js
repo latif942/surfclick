@@ -3,7 +3,8 @@ const cpsValue = document.getElementById('cps-value');
 const cdcSlider = document.getElementById('cdc-slider');
 const cdcValue = document.getElementById('cdc-value');
 
-const modeOptions = document.querySelectorAll('.mode-option');
+const modeOptions = document.querySelectorAll('.mode-option[data-mode]');
+const buttonOptions = document.querySelectorAll('#button-toggle .mode-option');
 
 const keyField = document.getElementById('key-field');
 const setKeyBtn = document.getElementById('set-key-btn');
@@ -13,6 +14,9 @@ const startBtnLabel = document.getElementById('start-btn-label');
 const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
 
+const minimizeBtn = document.getElementById('minimize-btn');
+const closeBtn = document.getElementById('close-btn');
+
 const presetList = document.getElementById('preset-list');
 const presetEmpty = document.getElementById('preset-empty');
 const presetNameInput = document.getElementById('preset-name');
@@ -21,10 +25,21 @@ const savePresetBtn = document.getElementById('save-preset-btn');
 const navItems = document.querySelectorAll('.nav-item');
 const pages = document.querySelectorAll('.page');
 
+const themeSwatches = document.querySelectorAll('.theme-swatch');
+const startupToggle = document.getElementById('startup-toggle');
+const uninstallBtn = document.getElementById('uninstall-btn');
+
+const THEME_NAMES = ['violet', 'cyber', 'sunset', 'toxic', 'ocean', 'vaporwave'];  // ← this line
+const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
+
+
 let state = {
   cps: 12.5,
   dutyCycle: 65,
   mode: 'toggle',
+  clickButton: 'left',
+  theme: 'violet',
+  launchOnStartup: false,
   activationKey: { type: 'keyboard', keyName: 'F6', label: 'F6' },
   running: false,
 };
@@ -46,6 +61,41 @@ function updateStatUI() {
 function updateModeUI() {
   modeOptions.forEach((el) => {
     el.classList.toggle('active', el.dataset.mode === state.mode);
+  });
+}
+
+function applyTheme(theme) {
+  THEME_NAMES.forEach((t) => document.body.classList.remove(`theme-${t}`));
+  if (theme && theme !== 'violet') {
+    document.body.classList.add(`theme-${theme}`);
+  }
+  let themeDebounce = null;
+  themeSwatches.forEach((el) => {
+    el.addEventListener('click', () => {
+      state.theme = el.dataset.theme;
+      applyTheme(state.theme); // visual change is instant
+      clearTimeout(themeDebounce);
+      themeDebounce = setTimeout(persistSettings, 150); // but saving to disk is debounced
+    });
+  });
+}
+
+  startupToggle.addEventListener('change', () => {
+    state.launchOnStartup = startupToggle.checked;
+    persistSettings();
+  });
+
+  uninstallBtn.addEventListener('click', async () => {
+    const result = await window.surfaceClicker.uninstallApp();
+    if (!result.success && !result.cancelled && result.message) {
+      alert(result.message);
+    }
+  });
+
+
+function updateButtonUI() {
+  buttonOptions.forEach((el) => {
+    el.classList.toggle('active', el.dataset.button === state.clickButton);
   });
 }
 
@@ -88,10 +138,8 @@ function renderPresets(presets) {
         <div class="details">${fmt(preset.cps)} cps · ${fmt(preset.dutyCycle)}% duty</div>
       </div>
       <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;margin-left:10px;">
-        <button class="preset-equip-btn" title="Load preset" style="width:52px;height:28px;min-width:52px;border-radius:7px;border:1px solid rgba(168,85,247,0.4);background:rgba(168,85,247,0.12);color:#c084fc;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-size:11px;font-weight:600;font-family:sans-serif;">Equip</button>
-        <button class="preset-delete-btn" title="Delete preset" style="width:30px;height:30px;min-width:30px;border-radius:7px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.55);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-size:14px;font-family:sans-serif;">
-          ✕
-        </button>
+        <button class="preset-equip-btn" title="Load preset">Equip</button>
+        <button class="preset-delete-btn" title="Delete preset">✕</button>
       </div>
     `;
     item.querySelector('.preset-equip-btn').addEventListener('click', () => {
@@ -119,7 +167,10 @@ function persistSettings() {
     cps: state.cps,
     dutyCycle: state.dutyCycle,
     mode: state.mode,
+    clickButton: state.clickButton,
     activationKey: state.activationKey,
+    theme: state.theme,
+    launchOnStartup: state.launchOnStartup,
   });
 }
 
@@ -229,6 +280,16 @@ modeOptions.forEach((el) => {
   });
 });
 
+// ---- click button toggle ----
+
+buttonOptions.forEach((el) => {
+  el.addEventListener('click', () => {
+    state.clickButton = el.dataset.button;
+    updateButtonUI();
+    persistSettings();
+  });
+});
+
 // ---- activation key capture ----
 
 setKeyBtn.addEventListener('click', async () => {
@@ -259,7 +320,11 @@ window.surfaceClicker.onHotkeyCaptured((binding) => {
 
 async function startClicking() {
   if (state.running) return;
-  await window.surfaceClicker.startClicking({ cps: state.cps, dutyCycle: state.dutyCycle });
+  await window.surfaceClicker.startClicking({
+    cps: state.cps,
+    dutyCycle: state.dutyCycle,
+    clickButton: state.clickButton,
+  });
 }
 
 async function stopClicking() {
@@ -273,6 +338,18 @@ startBtn.addEventListener('click', async () => {
   } else {
     await startClicking();
   }
+});
+
+// ---- window controls ----
+
+minimizeBtn.addEventListener('click', () => {
+  console.log('minimize clicked');
+  window.surfaceClicker.minimizeWindow();
+});
+
+closeBtn.addEventListener('click', () => {
+  console.log('close clicked');
+  window.surfaceClicker.closeWindow();
 });
 
 // ---- clicker status from main process ----
@@ -337,8 +414,11 @@ async function init() {
 
   updateStatUI();
   updateModeUI();
+  updateButtonUI();
   updateKeyUI();
   updateRunningUI();
+  applyTheme(state.theme);
+  startupToggle.checked = !!state.launchOnStartup;
 
   const presets = await window.surfaceClicker.listPresets();
   renderPresets(presets);
@@ -347,5 +427,25 @@ async function init() {
     p.style.display = p.dataset.page === 'main' ? '' : 'none';
   });
 }
+
+const overlayToggle = document.getElementById('overlay-toggle');
+
+overlayToggle.addEventListener('change', async () => {
+  if (overlayToggle.checked) {
+    await window.surfaceClicker.showOverlay();
+  } else {
+    await window.surfaceClicker.hideOverlay();
+  }
+});
+
+window.surfaceClicker.onOverlayClosed(() => {
+  overlayToggle.checked = false;
+});
+
+window.surfaceClicker.onSettingsUpdated((settings) => {
+  state.cps = settings.cps;
+  state.dutyCycle = settings.dutyCycle;
+  updateStatUI();
+});
 
 init();

@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('surfaceClicker', {
   // settings
   getSettings: () => ipcRenderer.invoke('settings:get'),
   setSettings: (partial) => ipcRenderer.invoke('settings:set', partial),
+  uninstallApp: () => ipcRenderer.invoke('app:uninstall'),
 
   // presets (cps + duty cycle only)
   listPresets: () => ipcRenderer.invoke('presets:list'),
@@ -28,5 +29,17 @@ contextBridge.exposeInMainWorld('surfaceClicker', {
   },
   onHotkeyUp: (callback) => {
     ipcRenderer.on('hotkey:up', () => callback());
+  },
+    // window controls
+  minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
+  closeWindow: () => ipcRenderer.invoke('window:close'),
+
+  showOverlay: () => ipcRenderer.invoke('overlay:show'),
+  hideOverlay: () => ipcRenderer.invoke('overlay:hide'),
+  onSettingsUpdated: (callback) => {
+    ipcRenderer.on('settings:updated', (_event, settings) => callback(settings));
+  },
+  onOverlayClosed: (callback) => {
+    ipcRenderer.on('overlay:closed', () => callback());
   },
 });
