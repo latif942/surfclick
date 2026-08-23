@@ -17,6 +17,7 @@ const store = new Store({
       appLockTarget: '',
       overlayEnabled: false,
       soundEnabled: true,
+      startupSoundEnabled: true,  // add this line
     },
     presets: [],
   },
