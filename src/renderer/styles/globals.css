@@ -944,3 +944,19 @@ input[type="range"] {
   0%, 100% { transform: translate(0, 0) scale(1); }
   50% { transform: translate(20px, -15px) scale(1.08); }
 }
+
+.custom-color-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.custom-color-row input[type="color"] {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  background: none;
+}

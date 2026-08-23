@@ -31,6 +31,47 @@ const uninstallBtn = document.getElementById('uninstall-btn');
 
 const THEME_NAMES = ['violet', 'cyber', 'sunset', 'toxic', 'ocean', 'vaporwave'];  // ← this line
 
+const customAccentInput = document.getElementById('custom-accent');
+
+function shade(hex, pct) {
+  const f = parseInt(hex.slice(1), 16);
+  const t = pct < 0 ? 0 : 255;
+  const p = Math.abs(pct);
+  const R = f >> 16, G = (f >> 8) & 0xff, B = f & 0xff;
+  return '#' + (0x1000000 +
+    (Math.round((t - R) * p) + R) * 0x10000 +
+    (Math.round((t - G) * p) + G) * 0x100 +
+    (Math.round((t - B) * p) + B)
+  ).toString(16).slice(1);
+}
+
+function hexToRgb(hex) {
+  const f = parseInt(hex.slice(1), 16);
+  return `${f >> 16}, ${(f >> 8) & 0xff}, ${f & 0xff}`;
+}
+
+function applyCustomAccent(hex) {
+  const body = document.body;
+  body.style.setProperty('--accent', hex);
+  body.style.setProperty('--accent-rgb', hexToRgb(hex));
+  body.style.setProperty('--accent-dark', shade(hex, -0.2));
+  body.style.setProperty('--accent-dark-rgb', hexToRgb(shade(hex, -0.2)));
+  body.style.setProperty('--accent-darker', shade(hex, -0.35));
+  body.style.setProperty('--accent-light', shade(hex, 0.25));
+  body.style.setProperty('--accent-lighter', shade(hex, 0.55));
+}
+
+function clearCustomAccent() {
+  ['--accent','--accent-rgb','--accent-dark','--accent-dark-rgb','--accent-darker','--accent-light','--accent-lighter']
+    .forEach((v) => document.body.style.removeProperty(v));
+}
+
+customAccentInput.addEventListener('input', () => {
+  state.customAccent = customAccentInput.value;
+  applyCustomAccent(state.customAccent);
+});
+customAccentInput.addEventListener('change', persistSettings);
+
 
 let state = {
   cps: 12.5,
@@ -74,6 +115,8 @@ let themeDebounce = null;
 themeSwatches.forEach((el) => {
   el.addEventListener('click', () => {
     state.theme = el.dataset.theme;
+    state.customAccent = null;
+    clearCustomAccent();
     applyTheme(state.theme);
     clearTimeout(themeDebounce);
     themeDebounce = setTimeout(persistSettings, 150);
@@ -426,6 +469,14 @@ async function init() {
   pages.forEach((p) => {
     p.style.display = p.dataset.page === 'main' ? '' : 'none';
   });
+
+
+  if (state.customAccent) {
+  customAccentInput.value = state.customAccent;
+  applyCustomAccent(state.customAccent);
+  }
+
+
 }
 
 window.surfaceClicker.onSettingsUpdated((settings) => {

@@ -37,4 +37,5 @@ contextBridge.exposeInMainWorld('surfaceClicker', {
   onSettingsUpdated: (callback) => {
     ipcRenderer.on('settings:updated', (_event, settings) => callback(settings));
   },
+  customAccent: state.customAccent
 });

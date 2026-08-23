@@ -8,7 +8,9 @@ const store = new Store({
       activationKey: { type: 'keyboard', keyName: 'F6' },
       mode: 'toggle',
       clickButton: 'left',
-      theme: 'violet', // 'violet' | 'cyber' | 'sunset' | 'toxic' | 'ocean' | 'vaporwave'
+      theme: 'violet',
+      customAccent: null, // hex string like '#ff6600', or null for preset themes
+      launchOnStartup: false,
       launchOnStartup: false,
     },
     presets: [],
