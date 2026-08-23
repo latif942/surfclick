@@ -8,6 +8,7 @@ const clicker = require('./clicker');
 const hotkeys = require('./hotkeys');
 const edgeStop = require('./edgeStop');
 const appLock = require('./appLock');
+const overlay = require('./overlay');
 
 let mainWindow;
 
@@ -44,9 +45,12 @@ function createWindow() {
       });
       if (response === 1) {
         clicker.stop();
+        overlay.destroyOverlay();
         mainWindow.destroy();
       }
+      return;
     }
+    overlay.destroyOverlay();
   });
 
   mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
@@ -80,6 +84,7 @@ app.whenReady().then(() => {
   applyLoginItemSettings(store.getSettings().launchOnStartup);
   appLock.setEnabled(store.getSettings().appLockEnabled);
   appLock.setTarget(store.getSettings().appLockTarget);
+  if (store.getSettings().overlayEnabled) overlay.createOverlay();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -94,6 +99,7 @@ app.on('window-all-closed', () => {
 app.on('will-quit', () => {
   hotkeys.shutdown();
   clicker.stop();
+  overlay.destroyOverlay();
 });
 
 // ---- IPC: settings persistence ----
@@ -109,6 +115,12 @@ ipcMain.handle('settings:set', (_event, partial) => {
   if (partial.appLockEnabled !== undefined) appLock.setEnabled(partial.appLockEnabled);
   if (partial.appLockTarget !== undefined) appLock.setTarget(partial.appLockTarget);
   mainWindow?.webContents.send('settings:updated', updated);
+
+  if (partial.cps !== undefined || partial.dutyCycle !== undefined || partial.theme !== undefined || partial.customAccent !== undefined) {
+    overlay.getWindow()?.webContents.send('overlay:update', {
+      cps: updated.cps, dutyCycle: updated.dutyCycle, theme: updated.theme, customAccent: updated.customAccent,
+    });
+  }
   return updated;
 });
 
@@ -214,3 +226,32 @@ ipcMain.handle('window:close', () => {
 });
 
 ipcMain.handle('applock:listWindows', () => appLock.listOpenWindows()); 
+
+ipcMain.handle('overlay:getState', () => {
+  const s = store.getSettings();
+  return { cps: s.cps, dutyCycle: s.dutyCycle, theme: s.theme, customAccent: s.customAccent };
+});
+ipcMain.handle('overlay:setCps', (_e, cps) => {
+  const updated = store.setSettings({ cps });
+  mainWindow?.webContents.send('settings:updated', updated);
+  return updated;
+});
+ipcMain.handle('overlay:setDutyCycle', (_e, dutyCycle) => {
+  const updated = store.setSettings({ dutyCycle });
+  mainWindow?.webContents.send('settings:updated', updated);
+  return updated;
+});
+ipcMain.handle('overlay:close', () => {
+  store.setSettings({ overlayEnabled: false });
+  overlay.destroyOverlay();
+  mainWindow?.webContents.send('settings:updated', store.getSettings());
+});
+ipcMain.handle('overlay:toggle', (_e, enabled) => {
+  store.setSettings({ overlayEnabled: enabled });
+  enabled ? overlay.createOverlay() : overlay.destroyOverlay();
+  return enabled;
+});
+ipcMain.handle('overlay:setAlwaysOnTop', (_e, val) => {
+  overlay.getWindow()?.setAlwaysOnTop(!!val, 'screen-saver');
+  return val;
+});

@@ -36,4 +36,6 @@ contextBridge.exposeInMainWorld('surfaceClicker', {
 
   getCurrentWindowTitle: () => ipcRenderer.invoke('applock:getCurrentTitle'),
   listOpenWindows: () => ipcRenderer.invoke('applock:listWindows'),
+
+  toggleOverlay: (enabled) => ipcRenderer.invoke('overlay:toggle', enabled),
 });

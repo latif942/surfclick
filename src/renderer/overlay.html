@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8" />
+<link href="https://fonts.googleapis.com/css2?family=Michroma&family=Plus+Jakarta+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { background: transparent; overflow: hidden; }
+
+  :root {
+    --accent-rgb: 168, 85, 247;
+    --accent: #a855f7;
+    --accent-light: #c084fc;
+    --accent-lighter: #e9d5ff;
+  }
+  body.theme-cyber   { --accent-rgb: 34, 211, 238;  --accent: #22d3ee; --accent-light: #67e8f9; --accent-lighter: #cffafe; }
+  body.theme-sunset  { --accent-rgb: 251, 146, 60;  --accent: #fb923c; --accent-light: #fdba74; --accent-lighter: #ffedd5; }
+  body.theme-toxic   { --accent-rgb: 163, 230, 53;  --accent: #a3e635; --accent-light: #bef264; --accent-lighter: #ecfccb; }
+  body.theme-ocean   { --accent-rgb: 45, 212, 191;  --accent: #2dd4bf; --accent-light: #5eead4; --accent-lighter: #ccfbf1; }
+  body.theme-vaporwave { --accent-rgb: 236, 72, 153; --accent: #ec4899; --accent-light: #f472b6; --accent-lighter: #fce7f3; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: #fff;
+    -webkit-app-region: drag;
+    user-select: none;
+    padding: 2px;
+  }
+  .panel {
+    position: relative;
+    border-radius: 14px;
+    padding: 14px 16px 12px;
+    background: linear-gradient(160deg, rgba(20,4,32,0.92), rgba(8,0,14,0.94));
+    border: 1px solid rgba(var(--accent-rgb), 0.35);
+    box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.25), inset 0 0 20px rgba(var(--accent-rgb), 0.05);
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .glow {
+    position: absolute; width: 140px; height: 140px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(var(--accent-rgb), 0.35), transparent 70%);
+    top: -60px; right: -50px; filter: blur(10px); pointer-events: none;
+    transition: background 0.2s;
+  }
+  .head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px; position: relative; z-index: 1;
+  }
+  .title {
+    font-family: 'Michroma', sans-serif; font-size: 9px; letter-spacing: 1.2px;
+    color: rgba(255,255,255,0.55); text-transform: uppercase;
+  }
+  .title span { color: var(--accent-light); }
+  .btns { display: flex; gap: 5px; -webkit-app-region: no-drag; }
+  .ibtn {
+    width: 20px; height: 20px; border-radius: 6px; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4);
+    font-size: 11px; transition: all 0.15s;
+  }
+  .ibtn:hover { background: rgba(var(--accent-rgb), 0.2); color: var(--accent-lighter); }
+  .ibtn.active { background: rgba(var(--accent-rgb), 0.35); color: var(--accent-lighter); box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.5); }
+
+  .row { position: relative; z-index: 1; margin-bottom: 10px; -webkit-app-region: no-drag; }
+  .row:last-child { margin-bottom: 0; }
+  .row-label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: 0.4px;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .row-val {
+    font-size: 15px; font-weight: 700; color: #fff; letter-spacing: 0;
+    cursor: text; border-bottom: 1px dashed transparent; transition: border-color 0.15s;
+  }
+  .row-val:hover { border-bottom-color: rgba(var(--accent-rgb), 0.5); }
+  .row-val .unit { font-size: 10px; color: rgba(255,255,255,0.3); margin-left: 1px; }
+
+  .row-val-input {
+    width: 4ch;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(var(--accent-rgb), 0.8);
+    color: #fff;
+    padding: 0;
+    -webkit-app-region: no-drag;
+  }
+  .row-val-input:focus { outline: none; }
+  .row-val-input::-webkit-outer-spin-button,
+  .row-val-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .row-val-input[type="number"] { -moz-appearance: textfield; }
+
+  input[type=range] {
+    width: 100%; height: 4px; border-radius: 3px; -webkit-appearance: none;
+    background: rgba(255,255,255,0.08); accent-color: var(--accent); outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
+    background: var(--accent-light); box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.9); cursor: pointer;
+  }
+</style></head>
+<body>
+  <div class="panel">
+    <div class="glow"></div>
+    <div class="head">
+      <div class="title">SURFACE<span>·</span>CLICKER</div>
+      <div class="btns">
+        <button class="ibtn" id="pin" title="Stay on top">📌</button>
+        <button class="ibtn" id="close" title="Close">✕</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-label"><span>CPS</span><span class="row-val" id="cpsVal">12<span class="unit">/s</span></span></div>
+      <input type="range" id="cps" min="1" max="100" step="0.5" />
+    </div>
+    <div class="row">
+      <div class="row-label"><span>Duty Cycle</span><span class="row-val" id="dcVal">65<span class="unit">%</span></span></div>
+      <input type="range" id="dc" min="1" max="100" step="1" />
+    </div>
+  </div>
+  <script src="overlay.js"></script>
+</body></html>

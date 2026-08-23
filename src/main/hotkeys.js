@@ -1,11 +1,3 @@
-// Registers the activation input (keyboard key OR mouse button, including
-// side buttons mouse4/mouse5) and reports down/up events separately so the
-// renderer can implement real toggle vs. hold behavior.
-//
-// A "binding" looks like one of:
-//   { type: 'keyboard', keyName: 'F6' }
-//   { type: 'mouse', button: 4 }
-
 const {
   uIOhook,
   isAvailable,
@@ -15,24 +7,57 @@ const {
 } = require('./rawInput');
 
 let activeBinding = null;
-let activeHandlers = null; // { onDown, onUp }
+let activeHandlers = null;
 
 let captureCallback = null;
 let captureTimeout = null;
 
 let listening = false;
 
+const MODIFIER_KEYWORDS = ['Ctrl', 'Shift', 'Alt', 'Meta'];
+
+function isModifierKey(keyName) {
+  return MODIFIER_KEYWORDS.some((m) => keyName.includes(m));
+}
+
+function modsFromEvent(evt) {
+  return {
+    ctrl: !!evt.ctrlKey,
+    shift: !!evt.shiftKey,
+    alt: !!evt.altKey,
+    meta: !!evt.metaKey,
+  };
+}
+
+function modsLabel(mods) {
+  if (!mods) return '';
+  const parts = [];
+  if (mods.ctrl) parts.push('Ctrl');
+  if (mods.shift) parts.push('Shift');
+  if (mods.alt) parts.push('Alt');
+  if (mods.meta) parts.push('Meta');
+  return parts.length ? parts.join('+') + '+' : '';
+}
+
 function bindingLabel(binding) {
   if (!binding) return null;
-  if (binding.type === 'keyboard') return binding.keyName;
+  const prefix = modsLabel(binding.modifiers);
+  if (binding.type === 'keyboard') return prefix + binding.keyName;
   if (binding.type === 'mouse') {
-    return MOUSE_BUTTON_LABELS[binding.button] || `Mouse ${binding.button}`;
+    return prefix + (MOUSE_BUTTON_LABELS[binding.button] || `Mouse ${binding.button}`);
   }
   return null;
 }
 
+function modsMatch(a, b) {
+  const A = a || { ctrl: false, shift: false, alt: false, meta: false };
+  const B = b || { ctrl: false, shift: false, alt: false, meta: false };
+  return A.ctrl === B.ctrl && A.shift === B.shift && A.alt === B.alt && A.meta === B.meta;
+}
+
 function bindingsMatch(a, b) {
   if (!a || !b || a.type !== b.type) return false;
+  if (!modsMatch(a.modifiers, b.modifiers)) return false;
   if (a.type === 'keyboard') return a.keyName === b.keyName;
   if (a.type === 'mouse') return a.button === b.button;
   return false;
@@ -51,33 +76,35 @@ function finishCapture(binding) {
 function handleKeyDown(evt) {
   const keyName = KEY_NAME_BY_CODE[evt.keycode] || `Key${evt.keycode}`;
   if (captureCallback) {
-    finishCapture({ type: 'keyboard', keyName });
+    if (isModifierKey(keyName)) return; // wait for the real key
+    finishCapture({ type: 'keyboard', keyName, modifiers: modsFromEvent(evt) });
     return;
   }
-  if (bindingsMatch(activeBinding, { type: 'keyboard', keyName })) {
+  if (bindingsMatch(activeBinding, { type: 'keyboard', keyName, modifiers: modsFromEvent(evt) })) {
     activeHandlers?.onDown?.();
   }
 }
 
 function handleKeyUp(evt) {
   const keyName = KEY_NAME_BY_CODE[evt.keycode] || `Key${evt.keycode}`;
-  if (bindingsMatch(activeBinding, { type: 'keyboard', keyName })) {
+  // Only match on the main key so releasing a modifier first doesn't strand hold-mode
+  if (activeBinding?.type === 'keyboard' && activeBinding.keyName === keyName) {
     activeHandlers?.onUp?.();
   }
 }
 
 function handleMouseDown(evt) {
   if (captureCallback) {
-    finishCapture({ type: 'mouse', button: evt.button });
+    finishCapture({ type: 'mouse', button: evt.button, modifiers: modsFromEvent(evt) });
     return;
   }
-  if (bindingsMatch(activeBinding, { type: 'mouse', button: evt.button })) {
+  if (bindingsMatch(activeBinding, { type: 'mouse', button: evt.button, modifiers: modsFromEvent(evt) })) {
     activeHandlers?.onDown?.();
   }
 }
 
 function handleMouseUp(evt) {
-  if (bindingsMatch(activeBinding, { type: 'mouse', button: evt.button })) {
+  if (activeBinding?.type === 'mouse' && activeBinding.button === evt.button) {
     activeHandlers?.onUp?.();
   }
 }

@@ -15,6 +15,8 @@ const store = new Store({
       edgeStop: false,
       appLockEnabled: false,
       appLockTarget: '',
+      overlayEnabled: false,
+      soundEnabled: true,
     },
     presets: [],
   },

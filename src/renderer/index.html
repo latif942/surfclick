@@ -134,9 +134,22 @@
           <div class="theme-swatch" data-theme="vaporwave" style="--swatch1:#ec4899;"></div>
         </div>
 
-        <div class="custom-color-row">
-          <label for="custom-accent">Custom color</label>
-          <input type="color" id="custom-accent" value="#a855f7" />
+        <div class="custom-color-card">
+          <button class="ccc-preview" id="custom-preview" aria-label="Pick custom accent color"></button>
+          <div class="ccc-fields">
+            <div class="ccc-label">Custom accent</div>
+            <input type="text" id="custom-hex" maxlength="7" placeholder="#a855f7" />
+          </div>
+
+          <div class="color-popover" id="color-popover">
+            <div class="sv-wrap" id="sv-wrap">
+              <canvas id="sv-canvas" width="220" height="140"></canvas>
+              <div class="sv-cursor" id="sv-cursor"></div>
+            </div>
+            <div class="hue-wrap" id="hue-wrap">
+              <div class="hue-thumb" id="hue-thumb"></div>
+            </div>
+          </div>
         </div>
 
         <div class="section-label">Startup</div>
@@ -201,12 +214,36 @@
         <span class="switch-track"></span>
       </label>
     </div>
+
     <div class="key-row">
       <div class="custom-dropdown" id="applock-dropdown">
         <div class="dropdown-trigger key-field" id="applock-trigger">No app set</div>
         <div class="dropdown-list" id="applock-list"></div>
       </div>
       <button class="btn-ghost" id="applock-refresh-btn">Refresh</button>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-row-label">
+        <div class="setting-row-title">Floating overlay</div>
+        <div class="setting-row-sub">Small always-on-top CPS/duty cycle panel</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="overlay-toggle" />
+        <span class="switch-track"></span>
+      </label>
+    </div>
+
+    <div class="section-label">Sound</div>
+    <div class="setting-row">
+      <div class="setting-row-label">
+        <div class="setting-row-title">Sound on start/stop</div>
+        <div class="setting-row-sub">Play a short beep when clicking starts or stops</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="sound-toggle" />
+        <span class="switch-track"></span>
+      </label>
     </div>
   </div>
 

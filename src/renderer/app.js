@@ -31,7 +31,185 @@ const uninstallBtn = document.getElementById('uninstall-btn');
 
 const THEME_NAMES = ['violet', 'cyber', 'sunset', 'toxic', 'ocean', 'vaporwave'];  // ← this line
 
-const customAccentInput = document.getElementById('custom-accent');
+const customPreview = document.getElementById('custom-preview');
+const customHexInput = document.getElementById('custom-hex');
+const colorPopover = document.getElementById('color-popover');
+const svCanvas = document.getElementById('sv-canvas');
+const svCursor = document.getElementById('sv-cursor');
+const svCtx = svCanvas.getContext('2d');
+const hueWrap = document.getElementById('hue-wrap');
+const hueThumb = document.getElementById('hue-thumb');
+const soundToggle = document.getElementById('sound-toggle');
+soundToggle.addEventListener('change', () => {
+  state.soundEnabled = soundToggle.checked;
+  persistSettings();
+});
+
+let audioCtx = null;
+function beep(freq, duration, gain = 0.08) {
+  if (state.soundEnabled === false) return;
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  g.gain.value = gain;
+  osc.connect(g);
+  g.connect(audioCtx.destination);
+  osc.start();
+  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+let hsv = { h: 271, s: 0.66, v: 0.97 }; // default matches #a855f7
+
+function isValidHex(v) { return /^#([0-9a-f]{6})$/i.test(v); }
+
+function hsvToRgb(h, s, v) {
+  const c = v * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = v - c;
+  let r=0,g=0,b=0;
+  if (h < 60) [r,g,b] = [c,x,0];
+  else if (h < 120) [r,g,b] = [x,c,0];
+  else if (h < 180) [r,g,b] = [0,c,x];
+  else if (h < 240) [r,g,b] = [0,x,c];
+  else if (h < 300) [r,g,b] = [x,0,c];
+  else [r,g,b] = [c,0,x];
+  return [Math.round((r+m)*255), Math.round((g+m)*255), Math.round((b+m)*255)];
+}
+function rgbToHex(r,g,b) {
+  return '#' + [r,g,b].map(n => n.toString(16).padStart(2,'0')).join('');
+}
+function hexToHsv(hex) {
+  const f = parseInt(hex.slice(1), 16);
+  const r = (f>>16)/255, g = ((f>>8)&0xff)/255, b = (f&0xff)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max-min;
+  let h = 0;
+  if (d !== 0) {
+    if (max === r) h = 60 * (((g-b)/d) % 6);
+    else if (max === g) h = 60 * ((b-r)/d + 2);
+    else h = 60 * ((r-g)/d + 4);
+  }
+  if (h < 0) h += 360;
+  return { h, s: max === 0 ? 0 : d/max, v: max };
+}
+
+function drawSV() {
+  const [r,g,b] = hsvToRgb(hsv.h, 1, 1);
+  const w = svCanvas.width, h = svCanvas.height;
+  svCtx.fillStyle = `rgb(${r},${g},${b})`;
+  svCtx.fillRect(0,0,w,h);
+  const satGrad = svCtx.createLinearGradient(0,0,w,0);
+  satGrad.addColorStop(0, 'rgba(255,255,255,1)');
+  satGrad.addColorStop(1, 'rgba(255,255,255,0)');
+  svCtx.fillStyle = satGrad;
+  svCtx.fillRect(0,0,w,h);
+  const valGrad = svCtx.createLinearGradient(0,0,0,h);
+  valGrad.addColorStop(0, 'rgba(0,0,0,0)');
+  valGrad.addColorStop(1, 'rgba(0,0,0,1)');
+  svCtx.fillStyle = valGrad;
+  svCtx.fillRect(0,0,w,h);
+}
+
+function updateCursors() {
+  svCursor.style.left = (hsv.s * 100) + '%';
+  svCursor.style.top = ((1 - hsv.v) * 100) + '%';
+  hueThumb.style.left = (hsv.h / 360 * 100) + '%';
+}
+
+function currentHex() {
+  const [r,g,b] = hsvToRgb(hsv.h, hsv.s, hsv.v);
+  return rgbToHex(r,g,b);
+}
+
+function applyLive() {
+  const hex = currentHex();
+  customPreview.style.background = hex;
+  customHexInput.value = hex;
+  customHexInput.classList.remove('invalid');
+  applyCustomAccent(hex);
+}
+
+function commitCustomAccent() {
+  const hex = currentHex();
+  state.customAccent = hex;
+  persistSettings();
+}
+
+drawSV();
+updateCursors();
+
+let justInteracted = false;
+
+customPreview.addEventListener('click', (e) => {
+  e.stopPropagation();
+  colorPopover.classList.toggle('open');
+});
+document.addEventListener('click', (e) => {
+  if (justInteracted) return;
+  if (!e.target.closest('.custom-color-card')) colorPopover.classList.remove('open');
+});
+
+function svPointerHandler(e) {
+  const rect = svCanvas.getBoundingClientRect();
+  const x = Math.min(Math.max(e.clientX - rect.left, 0), rect.width);
+  const y = Math.min(Math.max(e.clientY - rect.top, 0), rect.height);
+  hsv.s = x / rect.width;
+  hsv.v = 1 - y / rect.height;
+  updateCursors();
+  applyLive();
+}
+let draggingSV = false;
+document.getElementById('sv-wrap').addEventListener('mousedown', (e) => {
+  draggingSV = true;
+  justInteracted = true;
+  svPointerHandler(e);
+});
+window.addEventListener('mousemove', (e) => { if (draggingSV) svPointerHandler(e); });
+window.addEventListener('mouseup', () => {
+  if (draggingSV) { draggingSV = false; commitCustomAccent(); }
+  setTimeout(() => { justInteracted = false; }, 0);
+});
+
+function huePointerHandler(e) {
+  const rect = hueWrap.getBoundingClientRect();
+  const x = Math.min(Math.max(e.clientX - rect.left, 0), rect.width);
+  hsv.h = (x / rect.width) * 360;
+  drawSV();
+  updateCursors();
+  applyLive();
+}
+let draggingHue = false;
+hueWrap.addEventListener('mousedown', (e) => {
+  draggingHue = true;
+  justInteracted = true;
+  huePointerHandler(e);
+});
+window.addEventListener('mousemove', (e) => { if (draggingHue) huePointerHandler(e); });
+window.addEventListener('mouseup', () => {
+  if (draggingHue) { draggingHue = false; commitCustomAccent(); }
+  setTimeout(() => { justInteracted = false; }, 0);
+});
+
+customHexInput.addEventListener('input', () => {
+  const v = customHexInput.value.trim();
+  if (isValidHex(v)) {
+    customHexInput.classList.remove('invalid');
+    hsv = hexToHsv(v);
+    drawSV(); updateCursors();
+    customPreview.style.background = v;
+    applyCustomAccent(v);
+  } else {
+    customHexInput.classList.add('invalid');
+  }
+});
+customHexInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') customHexInput.blur(); });
+customHexInput.addEventListener('blur', () => {
+  const v = customHexInput.value.trim();
+  if (isValidHex(v)) commitCustomAccent();
+  else { customHexInput.value = state.customAccent || currentHex(); customHexInput.classList.remove('invalid'); }
+});
+
+
 const appLockToggle = document.getElementById('applock-toggle');
 
 appLockToggle.addEventListener('change', () => {
@@ -46,6 +224,11 @@ if (edgeStopToggle) {
     persistSettings();
   });
 }
+
+const overlayToggle = document.getElementById('overlay-toggle');
+overlayToggle.addEventListener('change', () => {
+  window.surfaceClicker.toggleOverlay(overlayToggle.checked);
+});
 
 
 function shade(hex, pct) {
@@ -80,12 +263,6 @@ function clearCustomAccent() {
   ['--accent','--accent-rgb','--accent-dark','--accent-dark-rgb','--accent-darker','--accent-light','--accent-lighter']
     .forEach((v) => document.body.style.removeProperty(v));
 }
-
-customAccentInput.addEventListener('input', () => {
-  state.customAccent = customAccentInput.value;
-  applyCustomAccent(state.customAccent);
-});
-customAccentInput.addEventListener('change', persistSettings);
 
 
 let state = {
@@ -228,9 +405,12 @@ function persistSettings() {
     clickButton: state.clickButton,
     activationKey: state.activationKey,
     theme: state.theme,
+    customAccent: state.customAccent,
     launchOnStartup: state.launchOnStartup,
     appLockEnabled: state.appLockEnabled,
     appLockTarget: state.appLockTarget,
+    overlayEnabled: state.overlayEnabled,
+    soundEnabled: state.soundEnabled,
   });
 }
 
@@ -415,8 +595,11 @@ closeBtn.addEventListener('click', () => {
 // ---- clicker status from main process ----
 
 window.surfaceClicker.onStatus((status) => {
+  const wasRunning = state.running;
   state.running = status.running;
   updateRunningUI();
+  if (status.running && !wasRunning) beep(880, 0.12);
+  if (!status.running && wasRunning) beep(440, 0.15);
 });
 
 // ---- hotkey down/up ----
@@ -481,13 +664,16 @@ async function init() {
   startupToggle.checked = !!state.launchOnStartup;
 
   if (state.customAccent) {
-    customAccentInput.value = state.customAccent;
+    customHexInput.value = state.customAccent;
+    customPreview.style.background = state.customAccent;
     applyCustomAccent(state.customAccent);
   }
 
   if (edgeStopToggle) edgeStopToggle.checked = !!state.edgeStop;
 
   appLockToggle.checked = !!state.appLockEnabled;
+  overlayToggle.checked = !!state.overlayEnabled;
+  soundToggle.checked = state.soundEnabled !== false;
   applockTrigger.textContent = state.appLockTarget || 'No app set';
   applockTrigger.classList.toggle('set', !!state.appLockTarget);
   await refreshOpenWindows();
@@ -498,6 +684,8 @@ async function init() {
   pages.forEach((p) => {
     p.style.display = p.dataset.page === 'main' ? '' : 'none';
   });
+
+  beep(660, 0.1);
 }
 
 window.surfaceClicker.onSettingsUpdated((settings) => {
