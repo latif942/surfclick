@@ -61,6 +61,12 @@ function beep(freq, duration, gain = 0.08) {
   osc.stop(audioCtx.currentTime + duration);
 }
 
+const startupSoundToggle = document.getElementById('startup-sound-toggle');
+startupSoundToggle.addEventListener('change', () => {
+  state.startupSoundEnabled = startupSoundToggle.checked;
+  persistSettings();
+});
+
 let hsv = { h: 271, s: 0.66, v: 0.97 }; // default matches #a855f7
 
 function isValidHex(v) { return /^#([0-9a-f]{6})$/i.test(v); }
@@ -662,7 +668,6 @@ async function init() {
   updateRunningUI();
   applyTheme(state.theme);
   startupToggle.checked = !!state.launchOnStartup;
-  soundToggle.checked = state.soundEnabled !== false;
 
   if (state.customAccent) {
     customHexInput.value = state.customAccent;
@@ -674,6 +679,7 @@ async function init() {
 
   appLockToggle.checked = !!state.appLockEnabled;
   overlayToggle.checked = !!state.overlayEnabled;
+  soundToggle.checked = state.soundEnabled !== false;
   applockTrigger.textContent = state.appLockTarget || 'No app set';
   applockTrigger.classList.toggle('set', !!state.appLockTarget);
   await refreshOpenWindows();
@@ -685,6 +691,22 @@ async function init() {
     p.style.display = p.dataset.page === 'main' ? '' : 'none';
   });
 }
+
+// Play startup chime on first user interaction (bypasses autoplay policy)
+let startupSoundPlayed = false;
+function playStartupSound() {
+  if (startupSoundPlayed || state.startupSoundEnabled === false) return;
+  startupSoundPlayed = true;
+  // Short ascending two-tone chime
+  beep(660, 0.12);
+  setTimeout(() => beep(880, 0.14), 100);
+  document.removeEventListener('click', playStartupSound);
+  document.removeEventListener('keydown', playStartupSound);
+}
+document.addEventListener('click', playStartupSound);
+document.addEventListener('keydown', playStartupSound);
+
+init();
 
 window.surfaceClicker.onSettingsUpdated((settings) => {
   state.cps = settings.cps;
