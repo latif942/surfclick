@@ -32,6 +32,17 @@ const uninstallBtn = document.getElementById('uninstall-btn');
 const THEME_NAMES = ['violet', 'cyber', 'sunset', 'toxic', 'ocean', 'vaporwave'];  // ← this line
 
 const customAccentInput = document.getElementById('custom-accent');
+const appLockToggle = document.getElementById('applock-toggle');
+
+
+const edgeStopToggle = document.getElementById('edgestop-toggle');
+if (edgeStopToggle) {
+  edgeStopToggle.addEventListener('change', () => {
+    state.edgeStop = edgeStopToggle.checked;
+    persistSettings();
+  });
+}
+
 
 function shade(hex, pct) {
   const f = parseInt(hex.slice(1), 16);
@@ -214,6 +225,8 @@ function persistSettings() {
     activationKey: state.activationKey,
     theme: state.theme,
     launchOnStartup: state.launchOnStartup,
+    appLockEnabled: state.appLockEnabled,
+    appLockTarget: state.appLockTarget,
   });
 }
 
@@ -463,26 +476,79 @@ async function init() {
   applyTheme(state.theme);
   startupToggle.checked = !!state.launchOnStartup;
 
+  if (state.customAccent) {
+    customAccentInput.value = state.customAccent;
+    applyCustomAccent(state.customAccent);
+  }
+
+  if (edgeStopToggle) edgeStopToggle.checked = !!state.edgeStop;
+
+  appLockToggle.checked = !!state.appLockEnabled;
+  applockTrigger.textContent = state.appLockTarget || 'No app set';
+  applockTrigger.classList.toggle('set', !!state.appLockTarget);
+  await refreshOpenWindows();
+
   const presets = await window.surfaceClicker.listPresets();
   renderPresets(presets);
 
   pages.forEach((p) => {
     p.style.display = p.dataset.page === 'main' ? '' : 'none';
   });
-
-
-  if (state.customAccent) {
-  customAccentInput.value = state.customAccent;
-  applyCustomAccent(state.customAccent);
-  }
-
-
 }
 
 window.surfaceClicker.onSettingsUpdated((settings) => {
   state.cps = settings.cps;
   state.dutyCycle = settings.dutyCycle;
   updateStatUI();
+});
+
+const applockTrigger = document.getElementById('applock-trigger');
+const applockList = document.getElementById('applock-list');
+const applockRefreshBtn = document.getElementById('applock-refresh-btn');
+
+function selectAppLockTarget(title) {
+  state.appLockTarget = title;
+  applockTrigger.textContent = title || 'No app set';
+  applockTrigger.classList.toggle('set', !!title);
+  applockList.classList.remove('open');
+  persistSettings();
+}
+
+async function refreshOpenWindows() {
+  const titles = await window.surfaceClicker.listOpenWindows();
+  applockList.innerHTML = '';
+
+  const noneItem = document.createElement('div');
+  noneItem.className = 'dropdown-item';
+  noneItem.textContent = 'No app set';
+  noneItem.addEventListener('click', () => selectAppLockTarget(''));
+  applockList.appendChild(noneItem);
+
+  titles.forEach((title) => {
+    const item = document.createElement('div');
+    item.className = 'dropdown-item';
+    if (title === state.appLockTarget) item.classList.add('selected');
+    item.textContent = title;
+    item.addEventListener('click', () => selectAppLockTarget(title));
+    applockList.appendChild(item);
+  });
+}
+
+applockTrigger.addEventListener('click', () => {
+  applockList.classList.toggle('open');
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#applock-dropdown')) {
+    applockList.classList.remove('open');
+  }
+});
+
+applockRefreshBtn.addEventListener('click', refreshOpenWindows);
+
+applockSelect.addEventListener('change', () => {
+  state.appLockTarget = applockSelect.value;
+  persistSettings();
 });
 
 init();

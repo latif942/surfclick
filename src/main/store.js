@@ -12,6 +12,9 @@ const store = new Store({
       customAccent: null, // hex string like '#ff6600', or null for preset themes
       launchOnStartup: false,
       launchOnStartup: false,
+      edgeStop: false,
+      appLockEnabled: false,
+      appLockTarget: '',
     },
     presets: [],
   },

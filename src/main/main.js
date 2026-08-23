@@ -6,6 +6,8 @@ const fs = require('fs');
 const store = require('./store');
 const clicker = require('./clicker');
 const hotkeys = require('./hotkeys');
+const edgeStop = require('./edgeStop');
+const appLock = require('./appLock');
 
 let mainWindow;
 
@@ -50,7 +52,7 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
   // Uncomment while developing to open devtools automatically
-  // mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools(); 
 }
 
 function applyLoginItemSettings(enabled) {
@@ -68,7 +70,16 @@ function registerCurrentBinding() {
 app.whenReady().then(() => {
   createWindow();
   registerCurrentBinding();
+  edgeStop.init(() => {
+    if (clicker.isRunning()) {
+      clicker.stop((status) => mainWindow?.webContents.send('clicker:status', status));
+      mainWindow?.webContents.send('clicker:status', { running: false });
+    }
+  });
+  edgeStop.setEnabled(store.getSettings().edgeStop);
   applyLoginItemSettings(store.getSettings().launchOnStartup);
+  appLock.setEnabled(store.getSettings().appLockEnabled);
+  appLock.setTarget(store.getSettings().appLockTarget);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -93,7 +104,10 @@ ipcMain.handle('settings:set', (_event, partial) => {
   const updated = store.setSettings(partial);
   if (partial.launchOnStartup !== undefined) {
     applyLoginItemSettings(partial.launchOnStartup);
+    if (partial.edgeStop !== undefined) edgeStop.setEnabled(partial.edgeStop);
   }
+  if (partial.appLockEnabled !== undefined) appLock.setEnabled(partial.appLockEnabled);
+  if (partial.appLockTarget !== undefined) appLock.setTarget(partial.appLockTarget);
   mainWindow?.webContents.send('settings:updated', updated);
   return updated;
 });
@@ -198,3 +212,5 @@ ipcMain.handle('window:close', () => {
   mainWindow?.close();
   return true;
 });
+
+ipcMain.handle('applock:listWindows', () => appLock.listOpenWindows()); 

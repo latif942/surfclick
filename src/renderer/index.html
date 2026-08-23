@@ -34,6 +34,10 @@
           <i class="ti ti-settings-2"></i>
           <span>Settings</span>
         </div>
+        <div class="nav-item" data-page="extras">
+          <i class="ti ti-sparkles"></i>
+          <span>Extras</span>
+        </div>
         <div class="nav-item" data-page="stats">
           <i class="ti ti-chart-line"></i>
           <span>Stats</span>
@@ -168,7 +172,42 @@
         </div>
       </div>
 
-    </main>
+
+  <div class="page" data-page="extras">
+    <header class="main-header">
+      <span class="page-title">Extras</span>
+    </header>
+
+    <div class="section-label">Safety</div>
+    <div class="setting-row">
+      <div class="setting-row-label">
+        <div class="setting-row-title">Edge/corner stop</div>
+        <div class="setting-row-sub">Move cursor to any screen edge to force-stop clicking</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="edgestop-toggle" />
+        <span class="switch-track"></span>
+      </label>
+    </div>
+
+    <div class="section-label">App Lock</div>
+    <div class="setting-row">
+      <div class="setting-row-label">
+        <div class="setting-row-title">Lock to app</div>
+        <div class="setting-row-sub">Only click while the target app window is focused</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="applock-toggle" />
+        <span class="switch-track"></span>
+      </label>
+    </div>
+    <div class="key-row">
+      <div class="custom-dropdown" id="applock-dropdown">
+        <div class="dropdown-trigger key-field" id="applock-trigger">No app set</div>
+        <div class="dropdown-list" id="applock-list"></div>
+      </div>
+      <button class="btn-ghost" id="applock-refresh-btn">Refresh</button>
+    </div>
   </div>
 
   <script src="app.js"></script>

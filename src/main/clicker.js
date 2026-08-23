@@ -14,6 +14,7 @@
 // batches, catching up to a wall-clock target in the same tick before
 // yielding to keep the UI responsive.
 
+const appLock = require('./appLock');
 const { performance } = require('perf_hooks');
 
 let mouse, Button;
@@ -110,7 +111,10 @@ function scheduleNext(targetTime) {
 // Standard single-cycle runner (low/medium CPS).
 async function runCycle(targetTime) {
   if (!running) return;
-
+  if (!(await appLock.isAllowed())) {
+    scheduleNext(targetTime + (1000 / Math.max(0.1, cfg.cps)));
+    return;
+  }
   const cycleMs = 1000 / Math.max(0.1, cfg.cps);
   const holdMs =
     cfg.cps < DUTY_CYCLE_THRESHOLD_CPS ? cycleMs * (cfg.dutyCycle / 100) : 0;
@@ -120,7 +124,6 @@ async function runCycle(targetTime) {
   if (!running) return;
   scheduleNext(targetTime + cycleMs);
 }
-
 // Burst runner (high CPS): fire multiple clicks per setImmediate tick if we
 // are behind the wall clock, then yield. This lets us sustain 200-500+ CPS
 // without flooding the event loop — we catch up to the clock in one batch,
@@ -131,17 +134,16 @@ async function runBurst(targetTime) {
   const cycleMs = 1000 / Math.max(0.1, cfg.cps);
   const now = performance.now();
 
-  // Fire all overdue clicks in one synchronous-ish burst (still awaited,
-  // but without extra timer overhead between them).
   let t = targetTime;
   while (t <= now + 0.5 && running) {
-    await doClick(0); // no hold at high CPS
+    if (await appLock.isAllowed()) {
+      await doClick(0);
+    }
     t += cycleMs;
   }
 
   if (!running) return;
 
-  // Schedule the next burst for whenever the next click is due.
   const delay = t - performance.now();
   if (delay <= 1) {
     setImmediate(() => runBurst(t));
