@@ -34,6 +34,10 @@ const THEME_NAMES = ['violet', 'cyber', 'sunset', 'toxic', 'ocean', 'vaporwave']
 const customAccentInput = document.getElementById('custom-accent');
 const appLockToggle = document.getElementById('applock-toggle');
 
+appLockToggle.addEventListener('change', () => {
+  state.appLockEnabled = appLockToggle.checked;
+  persistSettings();
+});
 
 const edgeStopToggle = document.getElementById('edgestop-toggle');
 if (edgeStopToggle) {
@@ -545,10 +549,5 @@ document.addEventListener('click', (e) => {
 });
 
 applockRefreshBtn.addEventListener('click', refreshOpenWindows);
-
-applockSelect.addEventListener('change', () => {
-  state.appLockTarget = applockSelect.value;
-  persistSettings();
-});
 
 init();
