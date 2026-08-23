@@ -56,7 +56,7 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
   // Uncomment while developing to open devtools automatically
-  mainWindow.webContents.openDevTools(); 
+  // mainWindow.webContents.openDevTools(); 
 }
 
 function applyLoginItemSettings(enabled) {
