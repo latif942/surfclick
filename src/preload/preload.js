@@ -34,12 +34,7 @@ contextBridge.exposeInMainWorld('surfaceClicker', {
   minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
   closeWindow: () => ipcRenderer.invoke('window:close'),
 
-  showOverlay: () => ipcRenderer.invoke('overlay:show'),
-  hideOverlay: () => ipcRenderer.invoke('overlay:hide'),
   onSettingsUpdated: (callback) => {
     ipcRenderer.on('settings:updated', (_event, settings) => callback(settings));
-  },
-  onOverlayClosed: (callback) => {
-    ipcRenderer.on('overlay:closed', () => callback());
   },
 });

@@ -30,7 +30,6 @@ const startupToggle = document.getElementById('startup-toggle');
 const uninstallBtn = document.getElementById('uninstall-btn');
 
 const THEME_NAMES = ['violet', 'cyber', 'sunset', 'toxic', 'ocean', 'vaporwave'];  // ← this line
-const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
 
 
 let state = {
@@ -69,16 +68,17 @@ function applyTheme(theme) {
   if (theme && theme !== 'violet') {
     document.body.classList.add(`theme-${theme}`);
   }
-  let themeDebounce = null;
-  themeSwatches.forEach((el) => {
-    el.addEventListener('click', () => {
-      state.theme = el.dataset.theme;
-      applyTheme(state.theme); // visual change is instant
-      clearTimeout(themeDebounce);
-      themeDebounce = setTimeout(persistSettings, 150); // but saving to disk is debounced
-    });
-  });
 }
+
+let themeDebounce = null;
+themeSwatches.forEach((el) => {
+  el.addEventListener('click', () => {
+    state.theme = el.dataset.theme;
+    applyTheme(state.theme);
+    clearTimeout(themeDebounce);
+    themeDebounce = setTimeout(persistSettings, 150);
+  });
+});
 
   startupToggle.addEventListener('change', () => {
     state.launchOnStartup = startupToggle.checked;
@@ -427,20 +427,6 @@ async function init() {
     p.style.display = p.dataset.page === 'main' ? '' : 'none';
   });
 }
-
-const overlayToggle = document.getElementById('overlay-toggle');
-
-overlayToggle.addEventListener('change', async () => {
-  if (overlayToggle.checked) {
-    await window.surfaceClicker.showOverlay();
-  } else {
-    await window.surfaceClicker.hideOverlay();
-  }
-});
-
-window.surfaceClicker.onOverlayClosed(() => {
-  overlayToggle.checked = false;
-});
 
 window.surfaceClicker.onSettingsUpdated((settings) => {
   state.cps = settings.cps;

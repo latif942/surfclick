@@ -9,42 +9,6 @@ const hotkeys = require('./hotkeys');
 
 let mainWindow;
 
-let overlayWindow = null;
-
-function createOverlayWindow() {
-  if (overlayWindow) return;
-  overlayWindow = new BrowserWindow({
-    width: 260,
-    height: 150,
-    frame: false,
-    transparent: true,
-    alwaysOnTop: true,
-    resizable: false,
-    skipTaskbar: true,
-    backgroundColor: '#00000000',
-    webPreferences: {
-      preload: path.join(__dirname, '../preload/preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-  overlayWindow.loadFile(path.join(__dirname, '../renderer/overlay.html'));
-  overlayWindow.on('closed', () => {
-    overlayWindow = null;
-    mainWindow?.webContents.send('overlay:closed');
-  });
-}
-
-ipcMain.handle('overlay:show', () => {
-  createOverlayWindow();
-  return true;
-});
-
-ipcMain.handle('overlay:hide', () => {
-  overlayWindow?.close();
-  return true;
-});
-
 function createWindow() {
   // Remove the native menu bar entirely
   Menu.setApplicationMenu(null);
@@ -131,7 +95,6 @@ ipcMain.handle('settings:set', (_event, partial) => {
     applyLoginItemSettings(partial.launchOnStartup);
   }
   mainWindow?.webContents.send('settings:updated', updated);
-  overlayWindow?.webContents.send('settings:updated', updated);
   return updated;
 });
 
