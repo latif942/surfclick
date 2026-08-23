@@ -13,7 +13,6 @@ const overlay = require('./overlay');
 let mainWindow;
 
 function createWindow() {
-  // Remove the native menu bar entirely
   Menu.setApplicationMenu(null);
 
   mainWindow = new BrowserWindow({
@@ -55,7 +54,6 @@ function createWindow() {
 
   mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
-  // Uncomment while developing to open devtools automatically
   // mainWindow.webContents.openDevTools(); 
 }
 
@@ -102,7 +100,6 @@ app.on('will-quit', () => {
   overlay.destroyOverlay();
 });
 
-// ---- IPC: settings persistence ----
 
 ipcMain.handle('settings:get', () => store.getSettings());
 
@@ -176,7 +173,6 @@ ipcMain.handle('presets:save', (_event, preset) => store.savePreset(preset));
 
 ipcMain.handle('presets:delete', (_event, id) => store.deletePreset(id));
 
-// ---- IPC: clicker control ----
 
 ipcMain.handle('clicker:start', (_event, { cps, dutyCycle, clickButton }) => {
   clicker.start({ cps, dutyCycle, clickButton }, (status) => {
@@ -190,12 +186,10 @@ ipcMain.handle('clicker:stop', () => {
   clicker.stop((status) => {
     mainWindow?.webContents.send('clicker:status', status);
   });
-  // Push an explicit running:false immediately
   mainWindow?.webContents.send('clicker:status', { running: false });
   return true;
 });
 
-// ---- IPC: activation key capture ----
 
 ipcMain.handle('hotkey:startCapture', () => {
   hotkeys.startCapture((binding) => {

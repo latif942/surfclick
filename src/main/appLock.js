@@ -18,13 +18,13 @@ function setTarget(title) {
 
 async function isAllowed() {
   if (!enabled || !targetTitle) return true;
-  if (!activeWin) return true;   // require('active-win') failed → always allowed
+  if (!activeWin) return true; 
   try {
     const win = await activeWin();
     if (!win) return false;
     return win.title.toLowerCase().includes(targetTitle);
   } catch {
-    return true;   // any error here → always allowed
+    return true;  
   }
 }
 

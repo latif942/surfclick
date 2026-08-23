@@ -76,7 +76,7 @@ function finishCapture(binding) {
 function handleKeyDown(evt) {
   const keyName = KEY_NAME_BY_CODE[evt.keycode] || `Key${evt.keycode}`;
   if (captureCallback) {
-    if (isModifierKey(keyName)) return; // wait for the real key
+    if (isModifierKey(keyName)) return; 
     finishCapture({ type: 'keyboard', keyName, modifiers: modsFromEvent(evt) });
     return;
   }
@@ -87,7 +87,6 @@ function handleKeyDown(evt) {
 
 function handleKeyUp(evt) {
   const keyName = KEY_NAME_BY_CODE[evt.keycode] || `Key${evt.keycode}`;
-  // Only match on the main key so releasing a modifier first doesn't strand hold-mode
   if (activeBinding?.type === 'keyboard' && activeBinding.keyName === keyName) {
     activeHandlers?.onUp?.();
   }
