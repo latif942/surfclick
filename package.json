@@ -4,7 +4,7 @@
   "description": "Surface Clicker - a configurable autoclicker with CPS and duty cycle control",
   "main": "src/main/main.js",
   "author": "",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
