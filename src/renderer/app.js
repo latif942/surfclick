@@ -662,6 +662,7 @@ async function init() {
   updateRunningUI();
   applyTheme(state.theme);
   startupToggle.checked = !!state.launchOnStartup;
+  soundToggle.checked = state.soundEnabled !== false;
 
   if (state.customAccent) {
     customHexInput.value = state.customAccent;
@@ -673,7 +674,6 @@ async function init() {
 
   appLockToggle.checked = !!state.appLockEnabled;
   overlayToggle.checked = !!state.overlayEnabled;
-  soundToggle.checked = state.soundEnabled !== false;
   applockTrigger.textContent = state.appLockTarget || 'No app set';
   applockTrigger.classList.toggle('set', !!state.appLockTarget);
   await refreshOpenWindows();
@@ -684,8 +684,6 @@ async function init() {
   pages.forEach((p) => {
     p.style.display = p.dataset.page === 'main' ? '' : 'none';
   });
-
-  beep(660, 0.1);
 }
 
 window.surfaceClicker.onSettingsUpdated((settings) => {
