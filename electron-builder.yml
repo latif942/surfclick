@@ -9,7 +9,10 @@ files:
   - package.json
 win:
   icon: assets/SurfaceClicker.ico
-  target: nsis
+  target:
+    - target: nsis
+      arch: x64
+  artifactName: "${productName} Setup v${version}.exe"
 mac:
   icon: assets/SurfaceClicker.icns
   target: dmg

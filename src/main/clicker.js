@@ -30,6 +30,9 @@ let sessionClicks = 0;
 let sessionStart = 0;
 let appSessionClicks = 0;
 
+const DUTY_CYCLE_THRESHOLD_CPS = 30;
+const TIGHT_LOOP_THRESHOLD_CPS = 80;
+
 async function doClick(holdMs) {
   if (!mouse) return;
   const btn = resolveButton(cfg.clickButton);
@@ -40,27 +43,6 @@ async function doClick(holdMs) {
       await mouse.releaseButton(btn);
     } else {
       await mouse.click(btn);
-    }
-  } catch (err) {
-    console.error('Click simulation error:', err);
-  }
-}
-
-
-
-
-const DUTY_CYCLE_THRESHOLD_CPS = 30; 
-const TIGHT_LOOP_THRESHOLD_CPS = 80; 
-
-async function doClick(holdMs) {
-  if (!mouse) return;
-  try {
-    if (holdMs >= 4) {
-      await mouse.pressButton(0);
-      await new Promise((r) => setTimeout(r, holdMs));
-      await mouse.releaseButton(0);
-    } else {
-    await mouse.click(0);
     }
     sessionClicks++;
     appSessionClicks++;
