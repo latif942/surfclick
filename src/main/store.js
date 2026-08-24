@@ -9,7 +9,7 @@ const store = new Store({
       mode: 'toggle',
       clickButton: 'left',
       theme: 'violet',
-      customAccent: null, // hex string like '#ff6600', or null for preset themes
+      customAccent: null, 
       launchOnStartup: false,
       launchOnStartup: false,
       edgeStop: false,
@@ -17,7 +17,7 @@ const store = new Store({
       appLockTarget: '',
       overlayEnabled: false,
       soundEnabled: true,
-      startupSoundEnabled: true,  // add this line
+      startupSoundEnabled: true,  
     },
     presets: [],
   },

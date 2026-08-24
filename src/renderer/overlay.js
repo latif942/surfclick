@@ -3,6 +3,8 @@ const dc = document.getElementById('dc');
 const cpsVal = document.getElementById('cpsVal');
 const dcVal = document.getElementById('dcVal');
 const pinBtn = document.getElementById('pin');
+const statusDot = document.getElementById('status-dot');
+const statusText = document.getElementById('status-text');
 
 const THEME_NAMES = ['violet', 'cyber', 'sunset', 'toxic', 'ocean', 'vaporwave'];
 
@@ -116,6 +118,11 @@ window.overlayAPI.onUpdate(({ cps: c, dutyCycle: d, theme, customAccent }) => {
   cpsVal.innerHTML = fmt(c) + '<span class="unit">/s</span>';
   dcVal.innerHTML = fmt(d) + '<span class="unit">%</span>';
   applyTheme(theme, customAccent);
+});
+
+window.overlayAPI.onStatus(({ running }) => {
+  statusDot.classList.toggle('running', running);
+  statusText.textContent = running ? 'running' : 'idle';
 });
 
 (async () => {

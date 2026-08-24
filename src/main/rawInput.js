@@ -1,4 +1,3 @@
-// Thin wrapper around uiohook-napi - a global keyboard/mouse hook.
 
 let uIOhook;
 let UiohookKey;
@@ -42,7 +41,6 @@ if (UiohookKey) {
   }
 }
 
-// Mouse 4 = XButton1 (back), Mouse 5 = XButton2 (forward)
 const MOUSE_BUTTON_LABELS = {
   1: 'Mouse Left',
   2: 'Mouse Right',

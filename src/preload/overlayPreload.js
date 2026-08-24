@@ -7,4 +7,5 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   setAlwaysOnTop: (val) => ipcRenderer.invoke('overlay:setAlwaysOnTop', val),
   close: () => ipcRenderer.invoke('overlay:close'),
   onUpdate: (cb) => ipcRenderer.on('overlay:update', (_e, s) => cb(s)),
+  onStatus: (cb) => ipcRenderer.on('overlay:status', (_e, s) => cb(s)),
 });

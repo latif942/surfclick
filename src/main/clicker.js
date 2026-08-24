@@ -53,7 +53,6 @@ async function doClick(holdMs) {
   if (!mouse) return;
   try {
     if (holdMs >= 4) {
-      // Two calls but the duty-cycle hold is meaningful at this CPS.
       await mouse.pressButton(0);
       await new Promise((r) => setTimeout(r, holdMs));
       await mouse.releaseButton(0);
@@ -65,14 +64,7 @@ async function doClick(holdMs) {
   }
 }
 
-// ---- scheduler ----
-// At low-to-medium CPS we use a drift-corrected setTimeout: schedule each
-// next tick against the *absolute* target time so jitter doesn't accumulate.
-//
-// At high CPS (>80) we switch to setImmediate: setTimeout has ~1ms minimum
-// resolution on most OSes, which becomes a significant fraction of each cycle
-// at 100+ CPS. setImmediate yields to the OS and comes back in the next event
-// loop iteration — effectively 0ms overhead — letting us hit 200-500+ CPS.
+
 
 function scheduleNext(targetTime) {
   const delay = targetTime - performance.now();
@@ -86,7 +78,6 @@ function scheduleNext(targetTime) {
   }
 }
 
-// Standard single-cycle runner (low/medium CPS).
 async function runCycle(targetTime) {
   if (!running) return;
   if (!(await appLock.isAllowed())) {
@@ -103,7 +94,6 @@ async function runCycle(targetTime) {
   scheduleNext(targetTime + cycleMs);
 }
 
-// then yield with setImmediate before the next batch.
 async function runBurst(targetTime) {
   if (!running) return;
 

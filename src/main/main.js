@@ -74,8 +74,12 @@ app.whenReady().then(() => {
   registerCurrentBinding();
   edgeStop.init(() => {
     if (clicker.isRunning()) {
-      clicker.stop((status) => mainWindow?.webContents.send('clicker:status', status));
+      clicker.stop((status) => {
+        mainWindow?.webContents.send('clicker:status', status);
+        overlay.getWindow()?.webContents.send('overlay:status', status);
+      });
       mainWindow?.webContents.send('clicker:status', { running: false });
+      overlay.getWindow()?.webContents.send('overlay:status', { running: false });
     }
   });
   edgeStop.setEnabled(store.getSettings().edgeStop);
@@ -177,19 +181,22 @@ ipcMain.handle('presets:delete', (_event, id) => store.deletePreset(id));
 ipcMain.handle('clicker:start', (_event, { cps, dutyCycle, clickButton }) => {
   clicker.start({ cps, dutyCycle, clickButton }, (status) => {
     mainWindow?.webContents.send('clicker:status', status);
+    overlay.getWindow()?.webContents.send('overlay:status', status);
   });
   mainWindow?.webContents.send('clicker:status', { running: true });
+  overlay.getWindow()?.webContents.send('overlay:status', { running: true });
   return true;
 });
 
 ipcMain.handle('clicker:stop', () => {
   clicker.stop((status) => {
     mainWindow?.webContents.send('clicker:status', status);
+    overlay.getWindow()?.webContents.send('overlay:status', status);
   });
   mainWindow?.webContents.send('clicker:status', { running: false });
+  overlay.getWindow()?.webContents.send('overlay:status', { running: false });
   return true;
 });
-
 
 ipcMain.handle('hotkey:startCapture', () => {
   hotkeys.startCapture((binding) => {

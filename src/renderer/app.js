@@ -29,7 +29,7 @@ const themeSwatches = document.querySelectorAll('.theme-swatch');
 const startupToggle = document.getElementById('startup-toggle');
 const uninstallBtn = document.getElementById('uninstall-btn');
 
-const THEME_NAMES = ['violet', 'cyber', 'sunset', 'toxic', 'ocean', 'vaporwave'];  // ← this line
+const THEME_NAMES = ['violet', 'cyber', 'sunset', 'toxic', 'ocean', 'vaporwave']; 
 
 const customPreview = document.getElementById('custom-preview');
 const customHexInput = document.getElementById('custom-hex');
@@ -67,7 +67,7 @@ startupSoundToggle.addEventListener('change', () => {
   persistSettings();
 });
 
-let hsv = { h: 271, s: 0.66, v: 0.97 }; // default matches #a855f7
+let hsv = { h: 271, s: 0.66, v: 0.97 }; 
 
 function isValidHex(v) { return /^#([0-9a-f]{6})$/i.test(v); }
 
@@ -354,7 +354,6 @@ function updateRunningUI() {
   startBtn.classList.toggle('running', state.running);
   statusDot.classList.toggle('running', state.running);
   statusText.textContent = state.running ? 'running' : 'idle';
-  // swap icon
   const icon = startBtn.querySelector('i');
   if (icon) {
     icon.className = state.running ? 'ti ti-player-stop' : 'ti ti-player-play';
@@ -420,7 +419,6 @@ function persistSettings() {
   });
 }
 
-// ---- nav ----
 
 navItems.forEach((item) => {
   item.addEventListener('click', () => {
@@ -434,7 +432,6 @@ navItems.forEach((item) => {
   });
 });
 
-// ---- slider events ----
 
 cpsSlider.addEventListener('input', () => {
   state.cps = parseFloat(cpsSlider.value);
@@ -448,7 +445,6 @@ cdcSlider.addEventListener('input', () => {
 });
 cdcSlider.addEventListener('change', persistSettings);
 
-// ---- click-to-type on CPS / duty cycle numbers ----
 
 function makeValueEditable(valueEl, slider, { min, max, clampToSlider }, onCommit) {
   valueEl.addEventListener('click', () => {
@@ -516,7 +512,7 @@ function slidersToState() {
   cdcValue.textContent = fmt(state.dutyCycle);
 }
 
-// ---- mode toggle ----
+
 
 modeOptions.forEach((el) => {
   el.addEventListener('click', () => {
@@ -526,7 +522,7 @@ modeOptions.forEach((el) => {
   });
 });
 
-// ---- click button toggle ----
+
 
 buttonOptions.forEach((el) => {
   el.addEventListener('click', () => {
@@ -536,7 +532,6 @@ buttonOptions.forEach((el) => {
   });
 });
 
-// ---- activation key capture ----
 
 setKeyBtn.addEventListener('click', async () => {
   listeningForKey = true;
@@ -562,7 +557,6 @@ window.surfaceClicker.onHotkeyCaptured((binding) => {
   updateKeyUI();
 });
 
-// ---- start/stop button ----
 
 async function startClicking() {
   if (state.running) return;
@@ -586,7 +580,6 @@ startBtn.addEventListener('click', async () => {
   }
 });
 
-// ---- window controls ----
 
 minimizeBtn.addEventListener('click', () => {
   console.log('minimize clicked');
@@ -598,7 +591,6 @@ closeBtn.addEventListener('click', () => {
   window.surfaceClicker.closeWindow();
 });
 
-// ---- clicker status from main process ----
 
 window.surfaceClicker.onStatus((status) => {
   const wasRunning = state.running;
@@ -608,7 +600,6 @@ window.surfaceClicker.onStatus((status) => {
   if (!status.running && wasRunning) beep(440, 0.15);
 });
 
-// ---- hotkey down/up ----
 
 window.surfaceClicker.onHotkeyDown(() => {
   if (state.mode === 'toggle') {
@@ -634,7 +625,6 @@ window.surfaceClicker.onHotkeyUp(() => {
   }
 });
 
-// ---- presets ----
 
 savePresetBtn.addEventListener('click', async () => {
   const name = presetNameInput.value.trim();
@@ -655,7 +645,6 @@ savePresetBtn.addEventListener('click', async () => {
   renderPresets(updated);
 });
 
-// ---- init ----
 
 async function init() {
   const settings = await window.surfaceClicker.getSettings();
@@ -692,12 +681,10 @@ async function init() {
   });
 }
 
-// Play startup chime on first user interaction (bypasses autoplay policy)
 let startupSoundPlayed = false;
 function playStartupSound() {
   if (startupSoundPlayed || state.startupSoundEnabled === false) return;
   startupSoundPlayed = true;
-  // Short ascending two-tone chime
   beep(660, 0.12);
   setTimeout(() => beep(880, 0.14), 100);
   document.removeEventListener('click', playStartupSound);
@@ -712,6 +699,11 @@ window.surfaceClicker.onSettingsUpdated((settings) => {
   state.cps = settings.cps;
   state.dutyCycle = settings.dutyCycle;
   updateStatUI();
+
+  if (settings.overlayEnabled !== undefined) {
+    state.overlayEnabled = settings.overlayEnabled;
+    overlayToggle.checked = settings.overlayEnabled;
+  }
 });
 
 const applockTrigger = document.getElementById('applock-trigger');

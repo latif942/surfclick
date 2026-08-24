@@ -7,9 +7,9 @@ function createOverlay() {
   if (overlayWindow) return overlayWindow;
   const { width } = screen.getPrimaryDisplay().workAreaSize;
   overlayWindow = new BrowserWindow({
-    width: 220,
-    height: 200,
-    x: width - 240,
+    width: 320,
+    height: 110,
+    x: width - 340,
     y: 20,
     frame: false,
     resizable: false,
