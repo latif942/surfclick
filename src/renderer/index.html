@@ -163,7 +163,17 @@
             <span class="switch-track"></span>
           </label>
         </div>
-
+        <div class="section-label">Performance</div>
+        <div class="setting-row">
+          <div class="setting-row-label">
+            <div class="setting-row-title">Performance mode</div>
+            <div class="setting-row-sub">Disables background animations to reduce CPU/GPU use while clicking</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="performance-toggle" />
+            <span class="switch-track"></span>
+          </label>
+        </div>
         <div class="section-label">Danger Zone</div>
         <div class="setting-row danger-row">
           <div class="setting-row-label">
@@ -179,9 +189,47 @@
         <header class="main-header">
           <span class="page-title">Stats</span>
         </header>
-        <div class="settings-placeholder">
-          <i class="ti ti-chart-line"></i>
-          <p>Stats coming soon</p>
+
+        <div class="section-label">This Session</div>
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">Clicks</div>
+            <div class="stat-value"><span id="stat-session-clicks">0</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Duration</div>
+            <div class="stat-value"><span id="stat-session-duration">0s</span></div>
+          </div>
+        </div>
+
+        <div class="section-label">All Time</div>
+        <div class="setting-row">
+          <div class="setting-row-title">Total clicks</div>
+          <div class="setting-row-sub" id="stat-alltime-clicks">0</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-title">Total time running</div>
+          <div class="setting-row-sub" id="stat-total-time">0s</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-title">Times started/stopped</div>
+          <div class="setting-row-sub" id="stat-start-stop-count">0</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-title">Longest session</div>
+          <div class="setting-row-sub" id="stat-longest-session">0s</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-title">Most used preset</div>
+          <div class="setting-row-sub" id="stat-most-preset">—</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-title">Most used mode</div>
+          <div class="setting-row-sub" id="stat-most-mode">—</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-title">Current streak</div>
+          <div class="setting-row-sub" id="stat-streak">0 days</div>
         </div>
       </div>
 

@@ -11,6 +11,7 @@ const appLock = require('./appLock');
 const overlay = require('./overlay');
 
 let mainWindow;
+const appLaunchTime = Date.now();
 
 function createWindow() {
   Menu.setApplicationMenu(null);
@@ -117,9 +118,9 @@ ipcMain.handle('settings:set', (_event, partial) => {
   if (partial.appLockTarget !== undefined) appLock.setTarget(partial.appLockTarget);
   mainWindow?.webContents.send('settings:updated', updated);
 
-  if (partial.cps !== undefined || partial.dutyCycle !== undefined || partial.theme !== undefined || partial.customAccent !== undefined) {
+  if (partial.cps !== undefined || partial.dutyCycle !== undefined || partial.theme !== undefined || partial.customAccent !== undefined || partial.performanceMode !== undefined) {
     overlay.getWindow()?.webContents.send('overlay:update', {
-      cps: updated.cps, dutyCycle: updated.dutyCycle, theme: updated.theme, customAccent: updated.customAccent,
+      cps: updated.cps, dutyCycle: updated.dutyCycle, theme: updated.theme, customAccent: updated.customAccent, performanceMode: updated.performanceMode,
     });
   }
   return updated;
@@ -178,7 +179,10 @@ ipcMain.handle('presets:save', (_event, preset) => store.savePreset(preset));
 ipcMain.handle('presets:delete', (_event, id) => store.deletePreset(id));
 
 
-ipcMain.handle('clicker:start', (_event, { cps, dutyCycle, clickButton }) => {
+let currentSessionMeta = { mode: null, presetName: null };
+
+ipcMain.handle('clicker:start', (_event, { cps, dutyCycle, clickButton, mode, presetName }) => {
+  currentSessionMeta = { mode: mode || null, presetName: presetName || null };
   clicker.start({ cps, dutyCycle, clickButton }, (status) => {
     mainWindow?.webContents.send('clicker:status', status);
     overlay.getWindow()?.webContents.send('overlay:status', status);
@@ -189,14 +193,28 @@ ipcMain.handle('clicker:start', (_event, { cps, dutyCycle, clickButton }) => {
 });
 
 ipcMain.handle('clicker:stop', () => {
-  clicker.stop((status) => {
+  const session = clicker.stop((status) => {
     mainWindow?.webContents.send('clicker:status', status);
     overlay.getWindow()?.webContents.send('overlay:status', status);
   });
+  const stats = store.recordSession({
+    clicks: session.clicks,
+    durationMs: session.durationMs,
+    mode: currentSessionMeta.mode,
+    presetName: currentSessionMeta.presetName,
+  });
   mainWindow?.webContents.send('clicker:status', { running: false });
   overlay.getWindow()?.webContents.send('overlay:status', { running: false });
+  mainWindow?.webContents.send('stats:updated', stats);
   return true;
 });
+
+ipcMain.handle('stats:get', () => store.getStats());
+ipcMain.handle('clicker:sessionStats', () => clicker.getSessionStats());
+ipcMain.handle('clicker:appSessionStats', () => ({
+  clicks: clicker.getAppSessionClicks(),
+  durationMs: Date.now() - appLaunchTime,
+}));
 
 ipcMain.handle('hotkey:startCapture', () => {
   hotkeys.startCapture((binding) => {
@@ -230,7 +248,7 @@ ipcMain.handle('applock:listWindows', () => appLock.listOpenWindows());
 
 ipcMain.handle('overlay:getState', () => {
   const s = store.getSettings();
-  return { cps: s.cps, dutyCycle: s.dutyCycle, theme: s.theme, customAccent: s.customAccent };
+  return { cps: s.cps, dutyCycle: s.dutyCycle, theme: s.theme, customAccent: s.customAccent, performanceMode: s.performanceMode };
 });
 ipcMain.handle('overlay:setCps', (_e, cps) => {
   const updated = store.setSettings({ cps });

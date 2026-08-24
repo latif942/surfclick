@@ -16,13 +16,22 @@ const store = new Store({
       appLockEnabled: false,
       appLockTarget: '',
       overlayEnabled: false,
+      performanceMode: false,
       soundEnabled: true,
       startupSoundEnabled: true,  
     },
     presets: [],
+    stats: {
+      allTimeClicks: 0,
+      totalTimeRunning: 0,
+      startStopCount: 0,
+      longestSession: 0,
+      presetUsage: {},
+      modeUsage: { toggle: 0, hold: 0 },
+      streak: { count: 0, lastDate: null },
+    },
   },
 });
-
 function getSettings() {
   return store.get('settings');
 }
@@ -58,4 +67,30 @@ function deletePreset(id) {
   return updated;
 }
 
-module.exports = { getSettings, setSettings, getPresets, savePreset, deletePreset };
+function getStats() {
+  return store.get('stats');
+}
+
+function recordSession({ clicks, durationMs, mode, presetName }) {
+  const stats = store.get('stats');
+
+  stats.allTimeClicks += clicks || 0;
+  stats.totalTimeRunning += durationMs || 0;
+  stats.startStopCount += 1;
+  stats.longestSession = Math.max(stats.longestSession, durationMs || 0);
+
+  if (mode) stats.modeUsage[mode] = (stats.modeUsage[mode] || 0) + 1;
+  if (presetName) stats.presetUsage[presetName] = (stats.presetUsage[presetName] || 0) + 1;
+
+  const today = new Date().toISOString().slice(0, 10);
+  if (stats.streak.lastDate !== today) {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    stats.streak.count = stats.streak.lastDate === yesterday ? stats.streak.count + 1 : 1;
+    stats.streak.lastDate = today;
+  }
+
+  store.set('stats', stats);
+  return stats;
+}
+
+module.exports = { getSettings, setSettings, getPresets, savePreset, deletePreset, getStats, recordSession };

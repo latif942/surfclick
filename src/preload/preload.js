@@ -9,6 +9,13 @@ contextBridge.exposeInMainWorld('surfaceClicker', {
   savePreset: (preset) => ipcRenderer.invoke('presets:save', preset),
   deletePreset: (id) => ipcRenderer.invoke('presets:delete', id),
 
+  getStats: () => ipcRenderer.invoke('stats:get'),
+  getSessionStats: () => ipcRenderer.invoke('clicker:sessionStats'),
+  getAppSessionStats: () => ipcRenderer.invoke('clicker:appSessionStats'),
+  onStatsUpdated: (callback) => {
+    ipcRenderer.on('stats:updated', (_event, stats) => callback(stats));
+  },
+
   startClicking: (params) => ipcRenderer.invoke('clicker:start', params),
   stopClicking: () => ipcRenderer.invoke('clicker:stop'),
   onStatus: (callback) => {

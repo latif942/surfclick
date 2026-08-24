@@ -236,6 +236,12 @@ overlayToggle.addEventListener('change', () => {
   window.surfaceClicker.toggleOverlay(overlayToggle.checked);
 });
 
+const performanceToggle = document.getElementById('performance-toggle');
+performanceToggle.addEventListener('change', () => {
+  state.performanceMode = performanceToggle.checked;
+  document.body.classList.toggle('perf-mode', state.performanceMode);
+  persistSettings();
+});
 
 function shade(hex, pct) {
   const f = parseInt(hex.slice(1), 16);
@@ -269,6 +275,67 @@ function clearCustomAccent() {
   ['--accent','--accent-rgb','--accent-dark','--accent-dark-rgb','--accent-darker','--accent-light','--accent-lighter']
     .forEach((v) => document.body.style.removeProperty(v));
 }
+
+const statsEls = {
+  sessionClicks: document.getElementById('stat-session-clicks'),
+  sessionDuration: document.getElementById('stat-session-duration'),
+  allTimeClicks: document.getElementById('stat-alltime-clicks'),
+  totalTime: document.getElementById('stat-total-time'),
+  startStopCount: document.getElementById('stat-start-stop-count'),
+  mostPreset: document.getElementById('stat-most-preset'),
+  longestSession: document.getElementById('stat-longest-session'),
+  mostMode: document.getElementById('stat-most-mode'),
+  streak: document.getElementById('stat-streak'),
+};
+
+function formatDuration(ms) {
+  const totalSec = Math.floor((ms || 0) / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function topEntry(obj) {
+  const entries = Object.entries(obj || {});
+  if (!entries.length) return '—';
+  entries.sort((a, b) => b[1] - a[1]);
+  return entries[0][0];
+}
+
+function renderLifetimeStats(stats) {
+  statsEls.allTimeClicks.textContent = stats.allTimeClicks.toLocaleString();
+  statsEls.totalTime.textContent = formatDuration(stats.totalTimeRunning);
+  statsEls.startStopCount.textContent = stats.startStopCount.toLocaleString();
+  statsEls.mostPreset.textContent = topEntry(stats.presetUsage);
+  statsEls.longestSession.textContent = formatDuration(stats.longestSession);
+  statsEls.mostMode.textContent = topEntry(stats.modeUsage);
+  statsEls.streak.textContent = `${stats.streak?.count || 0} day${stats.streak?.count === 1 ? '' : 's'}`;
+}
+
+let sessionPollInterval = null;
+async function pollSessionStats() {
+  const s = await window.surfaceClicker.getAppSessionStats();
+  statsEls.sessionClicks.textContent = s.clicks.toLocaleString();
+  statsEls.sessionDuration.textContent = formatDuration(s.durationMs);
+}
+function startSessionPolling() {
+  stopSessionPolling();
+  pollSessionStats();
+  sessionPollInterval = setInterval(pollSessionStats, 1000);
+}
+function stopSessionPolling() {
+  if (sessionPollInterval) {
+    clearInterval(sessionPollInterval);
+    sessionPollInterval = null;
+  }
+}
+
+window.surfaceClicker.onStatsUpdated((stats) => {
+  renderLifetimeStats(stats);
+});
 
 
 let state = {
@@ -385,6 +452,7 @@ function renderPresets(presets) {
     item.querySelector('.preset-equip-btn').addEventListener('click', () => {
       state.cps = preset.cps;
       state.dutyCycle = preset.dutyCycle;
+      state.equippedPreset = preset.name;
       updateStatUI();
       persistSettings();
     });
@@ -416,6 +484,7 @@ function persistSettings() {
     appLockTarget: state.appLockTarget,
     overlayEnabled: state.overlayEnabled,
     soundEnabled: state.soundEnabled,
+    performanceMode: state.performanceMode,
   });
 }
 
@@ -429,6 +498,12 @@ navItems.forEach((item) => {
     pages.forEach((p) => {
       p.style.display = p.dataset.page === page ? '' : 'none';
     });
+
+    if (page === 'stats') {
+      startSessionPolling();
+    } else {
+      stopSessionPolling();
+    }
   });
 });
 
@@ -564,6 +639,8 @@ async function startClicking() {
     cps: state.cps,
     dutyCycle: state.dutyCycle,
     clickButton: state.clickButton,
+    mode: state.mode,
+    presetName: state.equippedPreset || null,
   });
 }
 
@@ -656,7 +733,7 @@ async function init() {
   updateKeyUI();
   updateRunningUI();
   applyTheme(state.theme);
-  startupToggle.checked = !!state.launchOnStartup;
+  startupToggle.checked = !!state.launchOnStartup;  
 
   if (state.customAccent) {
     customHexInput.value = state.customAccent;
@@ -673,8 +750,14 @@ async function init() {
   applockTrigger.classList.toggle('set', !!state.appLockTarget);
   await refreshOpenWindows();
 
+  performanceToggle.checked = !!state.performanceMode;
+  document.body.classList.toggle('perf-mode', !!state.performanceMode);
+
   const presets = await window.surfaceClicker.listPresets();
   renderPresets(presets);
+
+  const stats = await window.surfaceClicker.getStats();
+  renderLifetimeStats(stats);
 
   pages.forEach((p) => {
     p.style.display = p.dataset.page === 'main' ? '' : 'none';

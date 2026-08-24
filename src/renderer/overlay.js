@@ -39,6 +39,10 @@ function applyTheme(theme, customAccent) {
   }
 }
 
+function applyPerfMode(performanceMode) {
+  document.body.classList.toggle('perf-mode', !!performanceMode);
+}
+
 document.getElementById('close').addEventListener('click', () => window.overlayAPI.close());
 
 cps.addEventListener('input', () => {
@@ -113,11 +117,12 @@ makeValueEditable(dcVal, dc, { min: 1, max: 100 }, (n) => {
   window.overlayAPI.setDutyCycle(n);
 });
 
-window.overlayAPI.onUpdate(({ cps: c, dutyCycle: d, theme, customAccent }) => {
+window.overlayAPI.onUpdate(({ cps: c, dutyCycle: d, theme, customAccent, performanceMode }) => {
   cps.value = c; dc.value = d;
   cpsVal.innerHTML = fmt(c) + '<span class="unit">/s</span>';
   dcVal.innerHTML = fmt(d) + '<span class="unit">%</span>';
   applyTheme(theme, customAccent);
+  applyPerfMode(performanceMode);
 });
 
 window.overlayAPI.onStatus(({ running }) => {
@@ -131,4 +136,5 @@ window.overlayAPI.onStatus(({ running }) => {
   cpsVal.innerHTML = fmt(cps.value) + '<span class="unit">/s</span>';
   dcVal.innerHTML = fmt(s.dutyCycle) + '<span class="unit">%</span>';
   applyTheme(s.theme, s.customAccent);
+  applyPerfMode(s.performanceMode);
 })();

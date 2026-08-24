@@ -37,6 +37,14 @@
     transition: border-color 0.2s, box-shadow 0.2s;
   }
 
+  body.perf-mode .bar {
+    box-shadow: inset 0 0 16px rgba(var(--accent-rgb), 0.04);
+    border-color: transparent;
+  }
+  body.perf-mode .status-dot.running {
+    box-shadow: none;
+  }
+  
   .top-row {
     display: flex;
     align-items: center;

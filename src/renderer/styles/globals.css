@@ -1069,3 +1069,9 @@ input[type="range"] {
   color: var(--accent-light);
   font-weight: 600;
 }
+body.perf-mode .glow-orb,
+body.perf-mode .app::before,
+body.perf-mode .app::after {
+  animation: none !important;
+  display: none;
+}

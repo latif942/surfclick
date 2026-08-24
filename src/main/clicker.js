@@ -26,6 +26,9 @@ function resolveButton(name) {
 let running = false;
 let scheduledTimer = null;
 let cfg = { cps: 1, dutyCycle: 50, clickButton: 'left' };
+let sessionClicks = 0;
+let sessionStart = 0;
+let appSessionClicks = 0;
 
 async function doClick(holdMs) {
   if (!mouse) return;
@@ -57,8 +60,10 @@ async function doClick(holdMs) {
       await new Promise((r) => setTimeout(r, holdMs));
       await mouse.releaseButton(0);
     } else {
-      await mouse.click(0);
+    await mouse.click(0);
     }
+    sessionClicks++;
+    appSessionClicks++;
   } catch (err) {
     console.error('Click simulation error:', err);
   }
@@ -122,6 +127,8 @@ function start({ cps, dutyCycle, clickButton }, onStatus) {
   if (running) stop();
   running = true;
   cfg = { cps, dutyCycle, clickButton: clickButton || 'left' };
+  sessionClicks = 0;
+  sessionStart = Date.now();
   onStatus?.({ running: true, cps, dutyCycle, clickButton: cfg.clickButton });
   scheduleNext(performance.now());
 }
@@ -132,11 +139,25 @@ function stop(onStatus) {
     clearTimeout(scheduledTimer);
     scheduledTimer = null;
   }
-  onStatus?.({ running: false });
+  const session = { clicks: sessionClicks, durationMs: sessionStart ? Date.now() - sessionStart : 0 };
+  onStatus?.({ running: false, ...session });
+  return session;
+}
+
+function getSessionStats() {
+  return {
+    running,
+    clicks: sessionClicks,
+    durationMs: running && sessionStart ? Date.now() - sessionStart : 0,
+  };
+}
+
+function getAppSessionClicks() {
+  return appSessionClicks;
 }
 
 function isRunning() {
   return running;
 }
 
-module.exports = { start, stop, isRunning };
+module.exports = { start, stop, isRunning, getSessionStats, getAppSessionClicks };
