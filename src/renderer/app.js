@@ -484,6 +484,7 @@ function persistSettings() {
     appLockTarget: state.appLockTarget,
     overlayEnabled: state.overlayEnabled,
     soundEnabled: state.soundEnabled,
+    startupSoundEnabled: state.startupSoundEnabled,
     performanceMode: state.performanceMode,
   });
 }
@@ -746,6 +747,7 @@ async function init() {
   appLockToggle.checked = !!state.appLockEnabled;
   overlayToggle.checked = !!state.overlayEnabled;
   soundToggle.checked = state.soundEnabled !== false;
+  startupSoundToggle.checked = state.startupSoundEnabled !== false;
   applockTrigger.textContent = state.appLockTarget || 'No app set';
   applockTrigger.classList.toggle('set', !!state.appLockTarget);
   await refreshOpenWindows();
